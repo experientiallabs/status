@@ -4,10 +4,10 @@ Public status page for the Experiential Labs platform, served at
 **[status.experientiallabs.ai](https://status.experientiallabs.ai)**, powered by
 [Upptime](https://upptime.js.org) (MIT).
 
-Checks run every 5 minutes from GitHub Actions and the page is a static site on
-GitHub Pages, so the status page shares **no infrastructure** with the platform:
-no Porter cluster, no Supabase, no shared pooler. If the platform is down, this
-page stays up and says so.
+Checks run every 5 minutes from GitHub Actions and the page is a static site
+served by Vercel, so the status page shares **no infrastructure** with the
+platform: no Porter cluster, no Supabase, no shared pooler. If the platform is
+down, this page stays up and says so.
 
 ## What is monitored
 
@@ -65,39 +65,33 @@ Rotate the key like any other production credential; it is referenced only as
 `$STATUS_GATEWAY_API_KEY` in config and never appears in the repo, the page, or
 committed history.
 
-## One-time activation (after the initial PR merges)
+## Hosting and deploys
 
-1. **Required:** add a `GH_PAT` repository secret. The enterprise policy forces
-   the default `GITHUB_TOKEN` to read-only, so without a PAT every workflow
-   fails: Upptime cannot commit history, open incident issues, or push the
-   `gh-pages` branch. Create a **fine-grained PAT scoped to only this repo**
-   with Contents and Issues read/write (optionally Actions read/write so Setup
-   CI can dispatch graph generation immediately; graphs also run on a daily
-   schedule without it), then:
+The site is **built** on GitHub and **served** by Vercel:
 
-   ```bash
-   gh secret set GH_PAT --repo experientiallabs/status
-   ```
+- **Static Site CI** exports the page onto the `gh-pages` branch (the artifact
+  branch — keep it). GitHub Pages serving is deliberately NOT used: its
+  Let's Encrypt issuance for `status.experientiallabs.ai` was terminally stuck
+  in `bad_authz` despite verified-correct DNS/CAA, so the custom domain moved
+  to Vercel.
+- **Deploy to Vercel** (`deploy-vercel.yml`, hand-maintained, not
+  Upptime-generated) runs after every successful Static Site CI (or manually
+  via workflow_dispatch) and ships the `gh-pages` tree to the Vercel project
+  `status` (team `experiential-labs`) with a pinned `vercel@59.5.0` CLI.
+  Between deploys the page still updates live — uptime numbers and incidents
+  are fetched client-side from the GitHub API.
+- Deployment protection is disabled on the Vercel project on purpose: a public
+  status page must be reachable by anyone.
+- DNS: Namecheap CNAME record, host `status`, value `cname.vercel-dns.com.`
+  (Vercel issues and renews the TLS certificate automatically.)
 
-2. Merging a change to `.upptimerc.yml` triggers **Setup CI**, which runs the
-   first checks and dispatches **Static Site CI** to build the page onto the
-   `gh-pages` branch. (Re-run it from the Actions tab if it ran before the
-   secret existed.)
-3. Enable GitHub Pages from `gh-pages` (the CNAME file is generated from
-   `status-website.cname`):
+### Required repository secrets
 
-   ```bash
-   gh api -X POST repos/experientiallabs/status/pages \
-     -f build_type=legacy -f "source[branch]=gh-pages" -f "source[path]=/"
-   ```
-
-4. Add the DNS record in Namecheap: CNAME host `status` →
-   `experientiallabs.github.io.`
-5. Once the certificate is issued, enforce HTTPS:
-
-   ```bash
-   gh api -X PUT repos/experientiallabs/status/pages -f https_enforced=true
-   ```
+| Secret | Why |
+|---|---|
+| `GH_PAT` | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
+| `VERCEL_TOKEN` | Deploys the site; scoped to the `experiential-labs` Vercel team. |
+| `VERCEL_ORG_ID` | Team id written into `.vercel/project.json` at deploy time. |
 
 ## Versioning and upkeep
 
