@@ -6,8 +6,10 @@
 # this workflow ships that exact tree to the Vercel project "status".
 name: Deploy to Vercel
 on:
+  # Setup CI deploys gh-pages itself on config pushes; Static Site CI covers
+  # the daily rebuild and asset pushes. Both must reach Vercel.
   workflow_run:
-    workflows: ["Static Site CI"]
+    workflows: ["Static Site CI", "Setup CI"]
     types: [completed]
   workflow_dispatch:
 concurrency:
