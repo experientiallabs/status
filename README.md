@@ -11,12 +11,12 @@ down, this page stays up and says so.
 
 ## What is monitored
 
-| Component           | Check                                                             | Healthy when                                                                                         |
-| ------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Web Dashboard       | `GET platform.experientiallabs.ai` (follows the 307 to `/models`) | 200                                                                                                  |
+| Component           | Check                                                             | Healthy when                                                                                            |
+| ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Web Dashboard       | `GET platform.experientiallabs.ai` (follows the 307 to `/models`) | 200                                                                                                     |
 | API                 | `GET api.experientiallabs.ai/v1/models`, unauthenticated          | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down |
-| Docs                | `GET platform.experientiallabs.ai/docs`                           | 200                                                                                                  |
-| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion            | 200; disabled until a status-org key exists (below)                                                 |
+| Docs                | `GET platform.experientiallabs.ai/docs`                           | 200                                                                                                     |
+| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion            | 200; disabled until a status-org key exists (below)                                                     |
 
 All checks live in [`.upptimerc.yml`](./.upptimerc.yml). That file is the single
 source of truth: the workflows in `.github/workflows` are generated from it by
