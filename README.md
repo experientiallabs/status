@@ -14,9 +14,9 @@ down, this page stays up and says so.
 | Component           | Check                                                             | Healthy when                                                                                         |
 | ------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Web Dashboard       | `GET platform.experientiallabs.ai` (follows the 307 to `/models`) | 200                                                                                                  |
-| API                 | `GET api.experientiallabs.ai/v1/models`, unauthenticated          | **401** — the app rejecting the request proves edge + gateway worker + auth are alive; a 5xx is down |
+| API                 | `GET api.experientiallabs.ai/v1/models`, unauthenticated          | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down |
 | Docs                | `GET platform.experientiallabs.ai/docs`                           | 200                                                                                                  |
-| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion            | 200 — disabled until a status-org key exists (below)                                                 |
+| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion            | 200; disabled until a status-org key exists (below)                                                 |
 
 All checks live in [`.upptimerc.yml`](./.upptimerc.yml). That file is the single
 source of truth: the workflows in `.github/workflows` are generated from it by
@@ -52,7 +52,7 @@ Incidents are GitHub Issues on this repository.
 ## Enabling the gateway completion probe
 
 The deep probe needs a dedicated, minimally funded API key from a status-only
-organization (never a customer or house org key — the key sits in this repo's
+organization (never a customer or house org key: the key sits in this repo's
 Actions secrets and is sent from GitHub runners):
 
 1. Create a status org on the platform and mint an `xpl_` key with a small
@@ -70,7 +70,7 @@ committed history.
 The site is **built** on GitHub and **served** by Vercel:
 
 - **Static Site CI** exports the page onto the `gh-pages` branch (the artifact
-  branch — keep it). GitHub Pages serving is deliberately NOT used: its
+  branch; keep it). GitHub Pages serving is deliberately NOT used: its
   Let's Encrypt issuance for `status.experientiallabs.ai` was terminally stuck
   in `bad_authz` despite verified-correct DNS/CAA, so the custom domain moved
   to Vercel.
@@ -78,7 +78,7 @@ The site is **built** on GitHub and **served** by Vercel:
   Upptime-generated) runs after every successful Static Site CI (or manually
   via workflow_dispatch) and ships the `gh-pages` tree to the Vercel project
   `status` (team `experiential-labs`) with a pinned `vercel@59.5.0` CLI.
-  Between deploys the page still updates live — uptime numbers and incidents
+  Between deploys the page still updates live: uptime numbers and incidents
   are fetched client-side from the GitHub API.
 - Deployment protection is disabled on the Vercel project on purpose: a public
   status page must be reachable by anyone.
@@ -89,7 +89,7 @@ The site is **built** on GitHub and **served** by Vercel:
   `customHeadHtml`). Its data needs no pipeline of its own: the bars read the
   `dailyMinutesDown` map Upptime already computes from incident issues and
   commits into `history/summary.json`, and the incident list reads the repo's
-  `status`-labeled issues — the same sources Upptime's own uptime numbers use.
+  `status`-labeled issues, the same sources Upptime's own uptime numbers use.
   Bar colors: green = no downtime, orange = under an hour down, red = an hour
   or more, gray = before monitoring began (the `MONITORING_SINCE` constant in
   the file). The favicon is the vendored `assets/logo.svg` / `logo-192.png`.

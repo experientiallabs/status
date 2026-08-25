@@ -1,4 +1,4 @@
-# Upptime configuration — https://upptime.js.org/docs/configuration
+# Upptime configuration: https://upptime.js.org/docs/configuration
 #
 # This file is the single source of truth for the status page. The workflows in
 # .github/workflows are GENERATED from it by Upptime's `update-template` command
@@ -67,7 +67,7 @@ status-website:
   name: Experiential Labs Status
   # Statuspage-style restyle (status.claude.com look): light-only theme with a
   # CSS override sheet injected after the theme stylesheet. The generator's DOM
-  # is untouched — the summary banner text nodes are collapsed (font-size: 0)
+  # is untouched: the summary banner text nodes are collapsed (font-size: 0)
   # and repainted via ::before, status pills are ::after content keyed off the
   # generator's up/down/degraded classes, and the sparkline card backgrounds
   # are hidden. Statuspage's per-day 90-day uptime bars are NOT reproducible:
@@ -195,7 +195,7 @@ status-website:
   # the platform is down.
   logoUrl: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo.svg
   introTitle: "**Experiential Labs** system status"
-  introMessage: Live uptime and incident history for the Experiential Labs model gateway, checked every 5 minutes from GitHub Actions — independent of our own infrastructure.
+  introMessage: Live uptime and incident history for the Experiential Labs model gateway, checked every 5 minutes from GitHub Actions, independent of our own infrastructure.
   navbar:
     - title: Status
       href: /
