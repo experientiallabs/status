@@ -1,0 +1,75 @@
+# Upptime configuration — https://upptime.js.org/docs/configuration
+#
+# This file is the single source of truth for the status page. The workflows in
+# .github/workflows are GENERATED from it by Upptime's `update-template` command
+# (Setup CI reruns it on every push that touches this file); edit this file, not
+# the workflows.
+owner: experientiallabs
+repo: status
+user-agent: experientiallabs
+
+sites:
+  # The root 307-redirects to /models; Upptime follows redirects (maxRedirects
+  # defaults to 3), so a healthy check lands on a 200.
+  - name: Web Dashboard
+    slug: web
+    url: https://platform.experientiallabs.ai
+    expectedStatusCodes: [200]
+  # Unauthenticated /v1/models must be REJECTED BY THE APP: a 401 proves the
+  # edge, gateway worker, and auth path are alive end to end. A 5xx (like the
+  # 502s when the session pooler saturates) is down. Do not "fix" this to 200.
+  - name: API
+    slug: api
+    url: https://api.experientiallabs.ai/v1/models
+    expectedStatusCodes: [401]
+  - name: Docs
+    slug: docs
+    url: https://platform.experientiallabs.ai/docs
+    expectedStatusCodes: [200]
+  # Deep gateway probe: a real completion through the serving path, funded by a
+  # dedicated status-org key. Disabled until that key exists as the
+  # STATUS_GATEWAY_API_KEY repository secret (see README "Enabling the gateway
+  # probe"); with the site enabled but the secret missing, the literal string
+  # would be sent as the bearer token and the check would report a false DOWN.
+  # - name: Gateway Completions
+  #   slug: gateway
+  #   url: https://api.experientiallabs.ai/v1/chat/completions
+  #   method: POST
+  #   headers:
+  #     - "Authorization: Bearer $STATUS_GATEWAY_API_KEY"
+  #     - "Content-Type: application/json"
+  #   body: '{"model": "qwen3.8-27b", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1}'
+  #   expectedStatusCodes: [200]
+
+# Authoritative allowlist of repository secrets exposed to the checker; without
+# this, Upptime injects its full notification-secret compatibility list.
+secrets:
+  - STATUS_GATEWAY_API_KEY
+
+# Down/degraded incidents are opened as GitHub Issues and auto-assigned here.
+assignees:
+  - SilenNaihin
+
+# Repo metadata (description, topics, homepage) stays human-managed; letting the
+# bot write it needs a PAT with admin scope we'd rather not grant.
+skipDescriptionUpdate: true
+skipTopicsUpdate: true
+skipHomepageUpdate: true
+
+status-website:
+  cname: status.experientiallabs.ai
+  name: Experiential Labs Status
+  # Served from this repo, not from the platform, so the logo still loads while
+  # the platform is down.
+  logoUrl: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo.svg
+  introTitle: "**Experiential Labs** system status"
+  introMessage: Live uptime and incident history for the Experiential Labs model gateway, checked every 5 minutes from GitHub Actions — independent of our own infrastructure.
+  navbar:
+    - title: Status
+      href: /
+    - title: Platform
+      href: https://platform.experientiallabs.ai
+    - title: Docs
+      href: https://platform.experientiallabs.ai/docs
+    - title: GitHub
+      href: https://github.com/experientiallabs/status
