@@ -87,11 +87,11 @@ The site is **built** on GitHub and **served** by Vercel:
 
 ### Required repository secrets
 
-| Secret | Why |
-|---|---|
-| `GH_PAT` | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
-| `VERCEL_TOKEN` | Deploys the site; scoped to the `experiential-labs` Vercel team. |
-| `VERCEL_ORG_ID` | Team id written into `.vercel/project.json` at deploy time. |
+| Secret          | Why                                                                                                                                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GH_PAT`        | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
+| `VERCEL_TOKEN`  | Deploys the site; scoped to the `experiential-labs` Vercel team.                                                                                                                                                  |
+| `VERCEL_ORG_ID` | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
 
 ## Versioning and upkeep
 
