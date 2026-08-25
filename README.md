@@ -82,6 +82,17 @@ The site is **built** on GitHub and **served** by Vercel:
   are fetched client-side from the GitHub API.
 - Deployment protection is disabled on the Vercel project on purpose: a public
   status page must be reachable by anyone.
+- **Statuspage-style UI** (90-day per-day uptime bars under each component,
+  and a dated Past Incidents section including "No incidents reported." days)
+  is one client-side file, `assets/status-ui/uptime-bars.js`, which the deploy
+  workflow overlays into the served tree at `/ui/` (referenced from
+  `customHeadHtml`). Its data needs no pipeline of its own: the bars read the
+  `dailyMinutesDown` map Upptime already computes from incident issues and
+  commits into `history/summary.json`, and the incident list reads the repo's
+  `status`-labeled issues — the same sources Upptime's own uptime numbers use.
+  Bar colors: green = no downtime, orange = under an hour down, red = an hour
+  or more, gray = before monitoring began (the `MONITORING_SINCE` constant in
+  the file). The favicon is the vendored `assets/logo.svg` / `logo-192.png`.
 - DNS: Namecheap CNAME record, host `status`, value `cname.vercel-dns.com.`
   (Vercel issues and renews the TLS certificate automatically.)
 

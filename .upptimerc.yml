@@ -75,6 +75,13 @@ status-website:
   # not per-day series, so that element has no data source without a custom
   # generator.
   theme: light
+  # Brand favicon (vendored in this repo, independent of the platform).
+  favicon: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo-192.png
+  faviconSvg: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo.svg
+  # Statuspage-style 90-day uptime bars and the dated Past Incidents section.
+  # The file lives at assets/status-ui/uptime-bars.js on main; the
+  # Deploy-to-Vercel workflow copies it into the served tree as /ui/.
+  customHeadHtml: '<script defer src="/ui/uptime-bars.js"></script>'
   css: |
     :root {
       --body-background-color: #ffffff;

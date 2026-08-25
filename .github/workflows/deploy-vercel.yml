@@ -27,6 +27,19 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: gh-pages
+      - name: Checkout main assets
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: main-src
+      # The status-ui enhancements (90-day uptime bars, dated Past Incidents)
+      # are plain files on main, referenced from customHeadHtml as /ui/*; the
+      # generated site tree does not carry them, so overlay them at deploy time.
+      - name: Overlay status-ui assets
+        run: |
+          mkdir -p ui
+          cp main-src/assets/status-ui/* ui/
+          rm -rf main-src
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
