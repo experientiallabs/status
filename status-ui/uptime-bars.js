@@ -24,7 +24,8 @@
 
   const style = document.createElement("style");
   style.textContent = `
-    .ub-strip { display: flex; gap: 2px; margin-top: 0.65rem; }
+    .ub-wrap { display: block; margin-top: 0.65rem; }
+    .ub-strip { display: flex; gap: 2px; }
     .ub-strip span { flex: 1 1 0; height: 34px; border-radius: 1.5px; background: #2fcc66; }
     .ub-strip span.ub-partial { background: #f1c40f; }
     .ub-strip span.ub-down { background: #e74c3c; }
@@ -94,6 +95,7 @@
     legend.className = "ub-legend";
     legend.innerHTML = `<span>${BAR_DAYS} days ago</span><b>${uptimePct}&thinsp;% uptime</b><span>Today</span>`;
     const wrap = document.createElement("div");
+    wrap.className = "ub-wrap";
     wrap.appendChild(strip);
     wrap.appendChild(legend);
     return wrap;
