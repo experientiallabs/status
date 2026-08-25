@@ -67,10 +67,23 @@ committed history.
 
 ## One-time activation (after the initial PR merges)
 
-1. Merging a change to `.upptimerc.yml` triggers **Setup CI**, which runs the
+1. **Required:** add a `GH_PAT` repository secret. The enterprise policy forces
+   the default `GITHUB_TOKEN` to read-only, so without a PAT every workflow
+   fails: Upptime cannot commit history, open incident issues, or push the
+   `gh-pages` branch. Create a **fine-grained PAT scoped to only this repo**
+   with Contents and Issues read/write (optionally Actions read/write so Setup
+   CI can dispatch graph generation immediately; graphs also run on a daily
+   schedule without it), then:
+
+   ```bash
+   gh secret set GH_PAT --repo experientiallabs/status
+   ```
+
+2. Merging a change to `.upptimerc.yml` triggers **Setup CI**, which runs the
    first checks and dispatches **Static Site CI** to build the page onto the
-   `gh-pages` branch.
-2. Enable GitHub Pages from `gh-pages` (the CNAME file is generated from
+   `gh-pages` branch. (Re-run it from the Actions tab if it ran before the
+   secret existed.)
+3. Enable GitHub Pages from `gh-pages` (the CNAME file is generated from
    `status-website.cname`):
 
    ```bash
@@ -78,19 +91,14 @@ committed history.
      -f build_type=legacy -f "source[branch]=gh-pages" -f "source[path]=/"
    ```
 
-3. Add the DNS record in Namecheap: CNAME host `status` →
+4. Add the DNS record in Namecheap: CNAME host `status` →
    `experientiallabs.github.io.`
-4. Once the certificate is issued, enforce HTTPS:
+5. Once the certificate is issued, enforce HTTPS:
 
    ```bash
    gh api -X PUT repos/experientiallabs/status/pages -f https_enforced=true
    ```
 
-If Pages deploys or issue updates fail with permission errors, the repo's
-Actions default workflow permissions must be read-write (Settings → Actions →
-General → Workflow permissions), or set a fine-grained PAT with `repo` scope as
-the `GH_PAT` secret — a PAT also makes `gh-pages` pushes reliably trigger Pages
-builds.
 
 ## Versioning and upkeep
 
