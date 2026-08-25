@@ -152,11 +152,25 @@ status-website:
     section.live-status article.up::after { content: "Operational"; color: #2fcc66; }
     section.live-status article.down::after { content: "Down"; color: #e74c3c; }
     section.live-status article.degraded::after { content: "Degraded"; color: #b7791f; }
-    section.live-status article > div {
+    /* :not([class]) scopes this to the generator's two bare metric divs; the
+       injected status-ui wrapper (div.ub-wrap) must stay block or the 90-day
+       strip collapses inline (that exact regression shipped once). */
+    section.live-status article > div:not([class]) {
       display: inline-block;
       margin-right: 1.25rem;
       font-size: 0.8rem;
       color: #6b7280;
+    }
+    @media (max-width: 560px) {
+      /* Statuspage-style phone layout: brand only in the nav (the link rail
+         would clip mid-word in its scroll container), name+pill row, then
+         stacked metrics. */
+      nav ul { display: none; }
+      section.live-status article h4 { display: block; margin-right: 6rem; }
+      section.live-status article > div:not([class]) {
+        display: block;
+        margin: 0.15rem 0 0;
+      }
     }
     section.live-status article .data {
       background: none !important;
