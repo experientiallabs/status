@@ -165,7 +165,8 @@ status-website:
       /* Statuspage-style phone layout: brand only in the nav (the link rail
          would clip mid-word in its scroll container), name+pill row, then
          stacked metrics. */
-      nav ul { display: none; }
+      /* !important outranks the generator's svelte-scoped ul rule. */
+      nav ul { display: none !important; }
       section.live-status article h4 { display: block; margin-right: 6rem; }
       section.live-status article > div:not([class]) {
         display: block;
