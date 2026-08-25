@@ -19,7 +19,7 @@
   const BAR_DAYS = 90;
   const INCIDENT_DAYS = 14;
   // First day with checks; earlier bars render as "no data". Set once when
-  // monitoring began — not derivable from Upptime's artifacts.
+  // monitoring began; not derivable from Upptime's artifacts.
   const MONITORING_SINCE = "2026-08-25";
 
   const style = document.createElement("style");
