@@ -91,8 +91,12 @@ The site is **built** on GitHub and **served** by Vercel:
   commits into `history/summary.json`, and the incident list reads the repo's
   `status`-labeled issues, the same sources Upptime's own uptime numbers use.
   Bar colors: green = no downtime, orange = under an hour down, red = an hour
-  or more, gray = before monitoring began (the `MONITORING_SINCE` constant in
-  the file). The favicon is the vendored `assets/logo.svg` / `logo-192.png`.
+  or more. Days before monitoring began (2026-08-25) come from
+  `assets/status-ui/backfill.json`: real pre-monitoring incidents are encoded
+  from the operator timeline and prod telemetry with a `src` flag per day
+  (`incident` or `telemetry`), and days absent from a component's map render
+  operational, the standard convention for new status pages. The favicon is
+  the vendored `assets/logo.svg` / `logo-192.png`.
 - DNS: Namecheap CNAME record, host `status`, value `cname.vercel-dns.com.`
   (Vercel issues and renews the TLS certificate automatically.)
 
