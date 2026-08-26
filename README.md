@@ -13,7 +13,7 @@ down, this page stays up and says so.
 
 | Component           | Check                                                             | Healthy when                                                                                            |
 | ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Web Dashboard       | `GET platform.experientiallabs.ai` (follows the 307 to `/models`) | 200                                                                                                     |
+| Web Dashboard       | `GET platform.experientiallabs.ai/signin` (light, always-public)  | 200                                                                                                     |
 | API                 | `GET api.experientiallabs.ai/v1/models`, unauthenticated          | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down |
 | Docs                | `GET platform.experientiallabs.ai/docs`                           | 200                                                                                                     |
 | Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion            | 200; disabled until a status-org key exists (below)                                                     |
