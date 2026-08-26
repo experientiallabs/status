@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-08-26T00:35:00Z",
+  "monitoringSince": "2026-08-25",
+  "notes": "Per-day downtime minutes for days before Upptime monitoring began (2026-08-25). src=incident: reconstructed from the operator incident timeline, corroborated by prod telemetry (gateway_requests volume collapse from ~16.7k/day to ~1.3k/day across the window). src=telemetry: derived from prod gateway_requests failure ratios (Aug 25 pooler exhaustion: 39% daily failure ratio concentrated in hour 17 UTC; window reported as roughly 30-60 minutes, encoded at the 45-minute midpoint). Days absent from a component's map are assumed operational, the standard convention for pre-monitoring history; request-level baseline failure ratios of 2-3%/day are client/request failures, not availability loss, and are not encoded.",
+  "components": {
+    "api": {
+      "2026-08-21": { "m": 256, "src": "incident" },
+      "2026-08-22": { "m": 1440, "src": "incident" },
+      "2026-08-23": { "m": 93, "src": "incident" },
+      "2026-08-25": { "m": 45, "src": "telemetry" }
+    },
+    "web": {},
+    "docs": {}
+  }
+}

@@ -1,7 +1,8 @@
 // Statuspage-style enhancements rendered on top of Upptime's generated DOM:
 //   1. Per-day 90-day uptime bars under each component row, derived from the
 //      dailyMinutesDown map Upptime itself computes from incident issues and
-//      commits into history/summary.json on every check run.
+//      commits into history/summary.json on every check run, merged with
+//      backfill.json for days before monitoring began.
 //   2. A dated "Past Incidents" section covering the last 14 days, including
 //      "No incidents reported." rows, from the repo's status-labeled issues
 //      (the same source Upptime's uptime numbers use). Upptime's own past-
@@ -18,9 +19,6 @@
   const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
   const BAR_DAYS = 90;
   const INCIDENT_DAYS = 14;
-  // First day with checks; earlier bars render as "no data". Set once when
-  // monitoring began; not derivable from Upptime's artifacts.
-  const MONITORING_SINCE = "2026-08-25";
 
   const style = document.createElement("style");
   style.textContent = `
@@ -29,7 +27,6 @@
     .ub-strip span { flex: 1 1 0; height: 34px; border-radius: 1.5px; background: #2fcc66; }
     .ub-strip span.ub-partial { background: #f1c40f; }
     .ub-strip span.ub-down { background: #e74c3c; }
-    .ub-strip span.ub-nodata { background: #e5e7eb; }
     .ub-legend { display: flex; justify-content: space-between; align-items: center;
       margin-top: 0.4rem; font-size: 0.75rem; color: #9ca3af; }
     .ub-legend b { color: #6b7280; font-weight: 600; }
@@ -57,40 +54,38 @@
     });
 
   const summaryPromise = fetch(`${RAW}/history/summary.json`).then((res) => res.json());
+  // Pre-monitoring history: per-day downtime minutes reconstructed from the
+  // incident timeline and prod telemetry (source-flagged in the JSON; days
+  // absent from a component's map are assumed operational). Served next to
+  // this file by the deploy overlay; merged with Upptime's live data below.
+  const backfillPromise = fetch("/ui/backfill.json")
+    .then((res) => (res.ok ? res.json() : { components: {} }))
+    .catch(() => ({ components: {} }));
   const issuesPromise = fetch(
     `${API}/issues?state=all&labels=status&per_page=100`
   ).then((res) => (res.ok ? res.json() : []));
 
-  function buildStrip(site) {
+  function buildStrip(site, backfillDays) {
     const daily = site.dailyMinutesDown || {};
     const strip = document.createElement("div");
     strip.className = "ub-strip";
     let downMinutes = 0;
-    let coveredDays = 0;
     for (let i = BAR_DAYS - 1; i >= 0; i -= 1) {
       const key = utcKey(daysAgo(i));
       const bar = document.createElement("span");
-      if (key < MONITORING_SINCE) {
-        bar.className = "ub-nodata";
-        bar.title = `${prettyDate(key)}: before monitoring began`;
-      } else {
-        coveredDays += 1;
-        const minutes = daily[key] || 0;
-        downMinutes += minutes;
-        // Color severity follows downtime share of the day: an hour or more
-        // reads as an outage, anything shorter as a partial disruption.
-        bar.className = minutes === 0 ? "" : minutes >= 60 ? "ub-down" : "ub-partial";
-        bar.title =
-          minutes === 0
-            ? `${prettyDate(key)}: no downtime`
-            : `${prettyDate(key)}: down ${minutes} min`;
-      }
+      const backfilled = backfillDays[key];
+      const minutes = Math.max(daily[key] || 0, backfilled ? backfilled.m : 0);
+      downMinutes += minutes;
+      // Color severity follows downtime share of the day: an hour or more
+      // reads as an outage, anything shorter as a partial disruption.
+      bar.className = minutes === 0 ? "" : minutes >= 60 ? "ub-down" : "ub-partial";
+      bar.title =
+        minutes === 0
+          ? `${prettyDate(key)}: no downtime`
+          : `${prettyDate(key)}: down ${minutes} min`;
       strip.appendChild(bar);
     }
-    const uptimePct =
-      coveredDays === 0
-        ? "100.00"
-        : (100 * (1 - downMinutes / (coveredDays * 24 * 60))).toFixed(2);
+    const uptimePct = (100 * (1 - downMinutes / (BAR_DAYS * 24 * 60))).toFixed(2);
     const legend = document.createElement("div");
     legend.className = "ub-legend";
     legend.innerHTML = `<span>${BAR_DAYS} days ago</span><b>${uptimePct}&thinsp;% uptime</b><span>Today</span>`;
@@ -101,14 +96,15 @@
     return wrap;
   }
 
-  function renderBars(sites) {
+  function renderBars([sites, backfill]) {
+    const components = (backfill && backfill.components) || {};
     document.querySelectorAll("section.live-status article").forEach((row) => {
       if (row.querySelector(".ub-strip")) return;
       const link = row.querySelector("h4 a[href*='/history/']");
       if (!link) return;
       const slug = link.getAttribute("href").split("/history/").pop();
       const site = sites.find((entry) => entry.slug === slug);
-      if (site) row.appendChild(buildStrip(site));
+      if (site) row.appendChild(buildStrip(site, components[slug] || {}));
     });
   }
 
@@ -175,7 +171,7 @@
 
   function enhance() {
     if (!document.querySelector("section.live-status article")) return false;
-    summaryPromise.then(renderBars).catch(() => {});
+    Promise.all([summaryPromise, backfillPromise]).then(renderBars).catch(() => {});
     issuesPromise.then(renderIncidents).catch(() => {});
     return true;
   }
