@@ -34,6 +34,9 @@
     .ub-legend { display: flex; justify-content: space-between; align-items: center;
       margin-top: 0.4rem; font-size: 0.75rem; color: #9ca3af; }
     .ub-legend b { color: #6b7280; font-weight: 600; }
+    .ub-metric { display: inline-block; margin-right: 1.25rem; font-size: 0.8rem; color: #6b7280; }
+    .ub-metric-value { color: #374151; font-variant-numeric: tabular-nums; }
+    .ub-metric-note { color: #9ca3af; }
     section.ub-incidents h2 { font-size: 1rem; font-weight: 600; margin-top: 2rem; }
     section.ub-incidents h3 { font-size: 0.9rem; font-weight: 600; color: #1f2937;
       border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-top: 1.4rem; }
@@ -58,6 +61,13 @@
     });
 
   const summaryPromise = fetch(`${RAW}/history/summary.json`).then((res) => res.json());
+  // Server-side latency from prod telemetry (refreshed by the server-latency
+  // workflow, committed to main): rendered instead of Upptime's checker
+  // average, which measures a fresh runner's cold DNS+TLS+TTFB, not our
+  // servers. Fetched from raw main so updates need no redeploy.
+  const latencyPromise = fetch(`${RAW}/assets/status-ui/server-latency.json`)
+    .then((res) => (res.ok ? res.json() : { components: {} }))
+    .catch(() => ({ components: {} }));
   const issuesPromise = fetch(
     `${API}/issues?state=all&labels=status&per_page=100`
   ).then((res) => (res.ok ? res.json() : []));
@@ -92,14 +102,23 @@
     return wrap;
   }
 
-  function renderBars(sites) {
+  function renderBars([sites, latency]) {
+    const latencyComponents = (latency && latency.components) || {};
     document.querySelectorAll("section.live-status article").forEach((row) => {
       if (row.querySelector(".ub-strip")) return;
       const link = row.querySelector("h4 a[href*='/history/']");
       if (!link) return;
       const slug = link.getAttribute("href").split("/history/").pop();
       const site = sites.find((entry) => entry.slug === slug);
-      if (site) row.appendChild(buildStrip(site));
+      if (!site) return;
+      const lat = latencyComponents[slug];
+      if (lat && typeof lat.p50Ms === "number") {
+        const metric = document.createElement("div");
+        metric.className = "ub-metric";
+        metric.innerHTML = `${lat.label}: <span class="ub-metric-value">${Math.round(lat.p50Ms)} ms</span> <span class="ub-metric-note">(server-side p50, ${lat.windowDays}d)</span>`;
+        row.appendChild(metric);
+      }
+      row.appendChild(buildStrip(site));
     });
   }
 
@@ -165,14 +184,38 @@
   }
 
   function enhance() {
+    if (!document.querySelector("section.live-status")) {
+      // Not on the index route (component/incident pages): drop the injected
+      // incidents section so it cannot linger under another route's content.
+      const orphan = document.querySelector("section.ub-incidents");
+      if (orphan) orphan.remove();
+      return false;
+    }
     if (!document.querySelector("section.live-status article")) return false;
-    summaryPromise.then(renderBars).catch(() => {});
+    Promise.all([summaryPromise, latencyPromise]).then(renderBars).catch(() => {});
     issuesPromise.then(renderIncidents).catch(() => {});
     return true;
   }
 
-  const observer = new MutationObserver(() => {
-    if (enhance()) observer.disconnect();
+  // The site is a Sapper SPA: navigating into a component/incident page and
+  // back re-renders the index client-side, discarding injected nodes. enhance
+  // is idempotent (guards on .ub-strip / .ub-incidents), so the observer stays
+  // connected for the page's lifetime, and pageshow/popstate cover bfcache
+  // restores and history navigation.
+  let scheduled = false;
+  const scheduleEnhance = () => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      enhance();
+    });
+  };
+  new MutationObserver(scheduleEnhance).observe(document.body, {
+    childList: true,
+    subtree: true,
   });
-  if (!enhance()) observer.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("pageshow", scheduleEnhance);
+  window.addEventListener("popstate", scheduleEnhance);
+  enhance();
 })();
