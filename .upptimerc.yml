@@ -179,6 +179,13 @@ status-website:
       color: #374151;
       font-variant-numeric: tabular-nums;
     }
+    /* The checker-measured average (a fresh runner's cold DNS+TLS+TTFB, about
+       200-450 ms for any endpoint) is hidden; the status-ui overlay renders
+       server-side latency from prod telemetry instead. This generator version
+       ignores showAverageResponseTime, so the hide is CSS. */
+    section.live-status article > div:not([class]):nth-of-type(2) {
+      display: none;
+    }
     /* Past incidents: calm date headers, white cards with a colored accent. */
     main section h2 { font-size: 1rem; font-weight: 600; }
     main section h3 {
