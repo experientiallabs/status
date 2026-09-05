@@ -16,7 +16,9 @@ down, this page stays up and says so.
 | Web Dashboard       | `GET platform.experientiallabs.ai/signin` (light, always-public) | 200                                                                                                     |
 | API                 | `GET api.experientiallabs.ai/v1/models`, unauthenticated         | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down |
 | Docs                | `GET platform.experientiallabs.ai/docs`                          | 200                                                                                                     |
-| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion           | 200; disabled until a status-org key exists (below)                                                     |
+| Gateway (authenticated) | `GET api.experientiallabs.ai/v1/models` with the status-monitor org key | 200; proves key auth, the gateway's Postgres path, and the catalog serve a signed-in caller |
+| API, live traffic   | Gateway ledger, last 15 minutes of real customer requests        | Rendered on the API row; gateway-owned error rate and volume vs baseline (below)                        |
+| Gateway Completions | `POST /v1/chat/completions`, a real 1-token completion           | 200; disabled until the status-monitor org is funded (below)                                            |
 
 All checks live in [`.upptimerc.yml`](./.upptimerc.yml). That file is the single
 source of truth: the workflows in `.github/workflows` are generated from it by
