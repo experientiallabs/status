@@ -37,6 +37,8 @@
     .ub-metric { display: inline-block; margin-right: 1.25rem; font-size: 0.8rem; color: #6b7280; }
     .ub-metric-value { color: #374151; font-variant-numeric: tabular-nums; }
     .ub-metric-note { color: #9ca3af; }
+    .ub-metric-value.ub-metric-degraded { color: #b7791f; font-weight: 600; }
+    .ub-metric-value.ub-metric-down { color: #e74c3c; font-weight: 600; }
     section.ub-incidents h2 { font-size: 1rem; font-weight: 600; margin-top: 2rem; }
     section.ub-incidents h3 { font-size: 0.9rem; font-weight: 600; color: #1f2937;
       border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-top: 1.4rem; }
@@ -68,6 +70,12 @@
   const latencyPromise = fetch(`${RAW}/assets/status-ui/server-latency.json`)
     .then((res) => (res.ok ? res.json() : { components: {} }))
     .catch(() => ({ components: {} }));
+  // Health from REAL customer traffic (gateway ledger, last 15 minutes),
+  // refreshed every 5 minutes by the traffic-health workflow. Rendered on the
+  // API row next to the synthetic check so a reader sees what customers see.
+  const trafficPromise = fetch(`${RAW}/assets/status-ui/traffic-health.json`)
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null);
   const issuesPromise = fetch(
     `${API}/issues?state=all&labels=status&per_page=100`
   ).then((res) => (res.ok ? res.json() : []));
@@ -102,7 +110,24 @@
     return wrap;
   }
 
-  function renderBars([sites, latency]) {
+  function trafficMetric(traffic) {
+    const figures = traffic && traffic.figures;
+    if (!figures || typeof figures.requests !== "number") return null;
+    const metric = document.createElement("div");
+    metric.className = "ub-metric";
+    const verdict = traffic.verdict || "ok";
+    const requests = figures.requests.toLocaleString("en-US");
+    const errors = Number(figures.gatewayErrorPct || 0).toFixed(1);
+    const state =
+      verdict === "ok"
+        ? `<span class="ub-metric-value">${errors}% gateway errors</span>`
+        : `<span class="ub-metric-value ub-metric-${verdict}">${verdict === "down" ? "Down" : "Degraded"}, ${errors}% gateway errors</span>`;
+    metric.innerHTML = `Live traffic: ${state} <span class="ub-metric-note">(${requests} requests, last ${traffic.windowMinutes || 15} min)</span>`;
+    if (traffic.reason) metric.title = traffic.reason;
+    return metric;
+  }
+
+  function renderBars([sites, latency, traffic]) {
     const latencyComponents = (latency && latency.components) || {};
     document.querySelectorAll("section.live-status article").forEach((row) => {
       if (row.querySelector(".ub-strip")) return;
@@ -117,6 +142,10 @@
         metric.className = "ub-metric";
         metric.innerHTML = `${lat.label}: <span class="ub-metric-value">${Math.round(lat.p50Ms)} ms</span> <span class="ub-metric-note">(server-side p50, ${lat.windowDays}d)</span>`;
         row.appendChild(metric);
+      }
+      if (slug === "api") {
+        const live = trafficMetric(traffic);
+        if (live) row.appendChild(live);
       }
       row.appendChild(buildStrip(site));
     });
@@ -192,7 +221,7 @@
       return false;
     }
     if (!document.querySelector("section.live-status article")) return false;
-    Promise.all([summaryPromise, latencyPromise]).then(renderBars).catch(() => {});
+    Promise.all([summaryPromise, latencyPromise, trafficPromise]).then(renderBars).catch(() => {});
     issuesPromise.then(renderIncidents).catch(() => {});
     return true;
   }
