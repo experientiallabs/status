@@ -58,7 +58,13 @@ customers are actually sending succeed. `traffic-health.yml` (hand-maintained,
 every 5 minutes) reads the production gateway ledger through the read-only
 `PROD_OPS_AGENT_DB_URL` role and writes `assets/status-ui/traffic-health.json`,
 which the status-ui overlay renders on the API row as
-"Live traffic: X% gateway errors (N requests, last 15 min)".
+"Live traffic: X% failed inside the gateway (N requests, last 15 min)". When
+the verdict is degraded or down, the API row's pill and the summary banner say
+so ("Degraded (live traffic)"), because the checker can be green while real
+requests fail (2026-09-05: 24% of requests failed for 35 minutes with
+/v1/models answering normally). The uptime percentages and 90-day bars stay on
+Upptime's incident data, so the two figures can legitimately disagree: uptime is
+"could the API be reached", live traffic is "did requests succeed right now".
 
 - **Gateway errors** count only failures the gateway owns (terminal classes
   `internal` and `unavailable`). Customer rejections (quota, invalid request)

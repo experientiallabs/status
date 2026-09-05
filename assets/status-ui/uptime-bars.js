@@ -39,6 +39,16 @@
     .ub-metric-note { color: #9ca3af; }
     .ub-metric-value.ub-metric-degraded { color: #b7791f; font-weight: 600; }
     .ub-metric-value.ub-metric-down { color: #e74c3c; font-weight: 600; }
+    /* Live-traffic state overrides the checker's pill and banner. The rules
+       must outrank the config sheet's article.up selectors. */
+    section.live-status article.ub-degraded { border-left-color: #f1c40f !important; }
+    section.live-status article.ub-down { border-left-color: #e74c3c !important; }
+    section.live-status article.ub-degraded::after { content: "Degraded (live traffic)" !important; color: #b7791f !important; }
+    section.live-status article.ub-down::after { content: "Down (live traffic)" !important; color: #e74c3c !important; }
+    main > article.ub-degraded { background: #f1c40f !important; }
+    main > article.ub-down { background: #e74c3c !important; }
+    main > article.ub-degraded::before { content: "Degraded Performance: live API traffic is failing" !important; color: #1f2937 !important; }
+    main > article.ub-down::before { content: "Partial Outage: live API traffic is failing" !important; }
     section.ub-incidents h2 { font-size: 1rem; font-weight: 600; margin-top: 2rem; }
     section.ub-incidents h3 { font-size: 0.9rem; font-weight: 600; color: #1f2937;
       border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-top: 1.4rem; }
@@ -110,6 +120,11 @@
     return wrap;
   }
 
+  const TRAFFIC_SCOPE =
+    "Counts only failures the gateway itself owns: internal errors and the " +
+    "gateway being unavailable. Exhausted free credits, invalid requests, and " +
+    "upstream provider errors are excluded, because those are not platform outages.";
+
   function trafficMetric(traffic) {
     const figures = traffic && traffic.figures;
     if (!figures || typeof figures.requests !== "number") return null;
@@ -118,13 +133,27 @@
     const verdict = traffic.verdict || "ok";
     const requests = figures.requests.toLocaleString("en-US");
     const errors = Number(figures.gatewayErrorPct || 0).toFixed(1);
-    const state =
-      verdict === "ok"
-        ? `<span class="ub-metric-value">${errors}% gateway errors</span>`
-        : `<span class="ub-metric-value ub-metric-${verdict}">${verdict === "down" ? "Down" : "Degraded"}, ${errors}% gateway errors</span>`;
+    const label = verdict === "down" ? "Down: " : verdict === "degraded" ? "Degraded: " : "";
+    const state = `<span class="ub-metric-value${verdict === "ok" ? "" : ` ub-metric-${verdict}`}">${label}${errors}% failed inside the gateway</span>`;
     metric.innerHTML = `Live traffic: ${state} <span class="ub-metric-note">(${requests} requests, last ${traffic.windowMinutes || 15} min)</span>`;
-    if (traffic.reason) metric.title = traffic.reason;
+    metric.title = traffic.reason ? `${traffic.reason} ${TRAFFIC_SCOPE}` : TRAFFIC_SCOPE;
     return metric;
+  }
+
+  // The checker's uptime figure and pill describe synthetic probes; live
+  // traffic can be failing while every probe passes (2026-09-05: 24% of
+  // requests failed inside the gateway for 35 minutes with /v1/models green).
+  // When live traffic is not ok, the API row and the summary banner say so.
+  // The 90-day bars and uptime percentages stay on Upptime's incident data.
+  function reflectTrafficState(row, traffic) {
+    const verdict = (traffic && traffic.verdict) || "ok";
+    const banner = document.querySelector("main > article");
+    for (const el of [row, banner]) {
+      if (!el) continue;
+      el.classList.remove("ub-degraded", "ub-down");
+      if (verdict === "ok") continue;
+      el.classList.add(verdict === "down" ? "ub-down" : "ub-degraded");
+    }
   }
 
   function renderBars([sites, latency, traffic]) {
@@ -149,6 +178,14 @@
       }
       row.appendChild(buildStrip(site));
     });
+    // Outside the per-row guard on purpose: Svelte rewrites the banner's class
+    // attribute when its data settles, which drops any class added earlier, so
+    // the live-traffic state is reapplied on every enhance pass (idempotent).
+    const apiRow = [...document.querySelectorAll("section.live-status article")].find((row) => {
+      const link = row.querySelector("h4 a[href*='/history/']");
+      return link && link.getAttribute("href").endsWith("/history/api");
+    });
+    reflectTrafficState(apiRow || null, traffic);
   }
 
   function renderIncidents(issues) {
