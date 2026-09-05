@@ -95,9 +95,12 @@ GitHub runs a scheduled workflow only when it has capacity. On this repo the
 checker's `*/5` cron landed about once every two hours (measured 2026-09-04/05),
 which would let an eight-minute API outage pass unseen. So the schedule is a
 fallback only: a Vercel Cron (`vercel/vercel.json`, every 5 minutes, Pro plan)
-calls `/api/cron/dispatch` (`vercel/api/cron/dispatch.js`, copied into the
-served root by `deploy-vercel.yml`), which sends two `repository_dispatch`
-events, `uptime` and `traffic-health`. Vercel project env (production):
+calls `/api/cron/uptime` on :00/:05/... and `/api/cron/traffic` two minutes
+later (`vercel/api/cron/*.js`, copied into the served root by
+`deploy-vercel.yml`); each sends one `repository_dispatch` event, `uptime` or
+`traffic-health`. The offset matters: both workflows commit to main and
+Upptime's checker pushes without rebasing, so firing them together made the
+checker lose the push race. Vercel project env (production):
 `CRON_SECRET` (Vercel presents it as the bearer token; anything else is 401) and
 `GH_DISPATCH_TOKEN` (a GitHub token with repo scope on this repo). The local
 copy of `CRON_SECRET` sits next to the probe key in the owner's
