@@ -142,14 +142,14 @@ The site is **built** on GitHub and **served** by Vercel:
 
 ### Required repository secrets
 
-| Secret          | Why                                                                                                                                                                                                               |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GH_PAT`        | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
-| `VERCEL_TOKEN`  | Deploys the site; scoped to the `experiential-labs` Vercel team.                                                                                                                                                  |
-| `VERCEL_ORG_ID` | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
-| `PROD_OPS_AGENT_DB_URL` | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                              |
-| `STATUS_GATEWAY_API_KEY` | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                    |
-| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker and from traffic-health.                                                                                            |
+| Secret                                                 | Why                                                                                                                                                                                                               |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GH_PAT`                                               | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
+| `VERCEL_TOKEN`                                         | Deploys the site; scoped to the `experiential-labs` Vercel team.                                                                                                                                                  |
+| `VERCEL_ORG_ID`                                        | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
+| `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
+| `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
+| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker and from traffic-health.                                                                                                                                    |
 
 ## Versioning and upkeep
 
