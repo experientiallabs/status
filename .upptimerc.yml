@@ -28,11 +28,22 @@ sites:
     slug: docs
     url: https://platform.experientiallabs.ai/docs
     expectedStatusCodes: [200]
-  # Deep gateway probe: a real completion through the serving path, funded by a
-  # dedicated status-org key. Disabled until that key exists as the
-  # STATUS_GATEWAY_API_KEY repository secret (see README "Enabling the gateway
-  # probe"); with the site enabled but the secret missing, the literal string
-  # would be sent as the bearer token and the check would report a false DOWN.
+  # Authenticated gateway probe: the same /v1/models call as the API row, but
+  # with a real key from the dedicated status-monitor org (never a customer or
+  # house key). A 200 proves key auth, the gateway's Postgres path, and the
+  # catalog are serving for a signed-in caller, which the 401 check cannot.
+  # The key is the STATUS_GATEWAY_API_KEY repository secret (README "Enabling
+  # the gateway probes"); if it is ever removed, disable this site first, or the
+  # literal string is sent as the bearer token and the row reports a false DOWN.
+  - name: Gateway (authenticated)
+    slug: gateway
+    url: https://api.experientiallabs.ai/v1/models
+    headers:
+      - "Authorization: Bearer $STATUS_GATEWAY_API_KEY"
+    expectedStatusCodes: [200]
+  # Deeper still: a real completion through the serving path. Needs the
+  # status-monitor org funded with a small credit grant first (an unfunded
+  # request is a 429, not a 200), so it stays off until that is done.
   # - name: Gateway Completions
   #   slug: gateway
   #   url: https://api.experientiallabs.ai/v1/chat/completions
@@ -47,6 +58,11 @@ sites:
 # this, Upptime injects its full notification-secret compatibility list.
 secrets:
   - STATUS_GATEWAY_API_KEY
+  # Down/degraded/up notifications from the checker itself. Both must be set
+  # together: NOTIFICATION_SLACK=true and the incoming-webhook URL. The
+  # traffic-health workflow posts to the same webhook.
+  - NOTIFICATION_SLACK
+  - NOTIFICATION_SLACK_WEBHOOK_URL
 
 # Down/degraded incidents are opened as GitHub Issues and auto-assigned here.
 assignees:

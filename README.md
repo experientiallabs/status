@@ -49,19 +49,60 @@ Incidents are GitHub Issues on this repository.
   During the window the listed components fail without opening a new incident,
   and Upptime closes and locks the issue automatically once `end` passes.
 
-## Enabling the gateway completion probe
+## Live traffic health (real customer requests)
 
-The deep probe needs a dedicated, minimally funded API key from a status-only
-organization (never a customer or house org key: the key sits in this repo's
-Actions secrets and is sent from GitHub runners):
+Synthetic checks prove the door opens; they cannot see whether the requests
+customers are actually sending succeed. `traffic-health.yml` (hand-maintained,
+every 5 minutes) reads the production gateway ledger through the read-only
+`PROD_OPS_AGENT_DB_URL` role and writes `assets/status-ui/traffic-health.json`,
+which the status-ui overlay renders on the API row as
+"Live traffic: X% gateway errors (N requests, last 15 min)".
 
-1. Create a status org on the platform and mint an `xpl_` key with a small
-   credit grant.
-2. `gh secret set STATUS_GATEWAY_API_KEY --repo experientiallabs/status`
-3. Uncomment the `Gateway Completions` site in `.upptimerc.yml` and merge; Setup
-   CI regenerates the workflows on that push.
+- **Gateway errors** count only failures the gateway owns (terminal classes
+  `internal` and `unavailable`). Customer rejections (quota, invalid request)
+  and upstream provider errors are excluded on purpose: a customer out of
+  credits is not an outage, and a provider incident is reported by the provider.
+- **Baseline** is the 7-day median request count for the same 15-minute slot at
+  this hour, so a traffic collapse is detected even when nothing errors.
+- **Verdicts.** Down: 25% or more gateway errors over at least 20 finished
+  requests, zero requests against a baseline of 20 or more, or the database
+  unreachable on two consecutive checks (the gateway's readiness gates on a
+  live database ping, so that is an API outage). Degraded: 5% or more gateway
+  errors, or under a fifth of the baseline volume. Thresholds live at the top
+  of the workflow's Python step.
+- **Alerts.** A non-ok verdict opens one GitHub issue labeled `traffic-alert`
+  (assigned to the owner) and posts to Slack; recovery closes the issue and
+  posts again. These issues carry a different label from Upptime's `status`
+  incidents, so the uptime percentages and 90-day bars keep their single source.
 
-Rotate the key like any other production credential; it is referenced only as
+## Alerts
+
+Two independent alert paths, both to the same Slack incoming webhook:
+
+1. **Checker incidents** (Upptime): set both repository secrets together,
+   `NOTIFICATION_SLACK=true` and `NOTIFICATION_SLACK_WEBHOOK_URL=<url>`. Both
+   names are on the `secrets` allowlist in `.upptimerc.yml`. Upptime posts on
+   down, degraded, and recovery, and still opens the incident issue and assigns
+   the owner (GitHub emails the assignee) whether or not Slack is configured.
+2. **Traffic alerts** (this repo's workflow): reads the same
+   `NOTIFICATION_SLACK_WEBHOOK_URL`; with it unset, the GitHub issue is the alert.
+
+## Enabling the gateway probes
+
+`Gateway (authenticated)` is live: the `status-monitor` organization on the
+platform (slug `status-monitor`, key named "status-page authenticated probe")
+holds the `STATUS_GATEWAY_API_KEY` secret. Never point this at a customer or
+house org key: the key sits in this repo's Actions secrets and is sent from
+GitHub runners.
+
+The commented `Gateway Completions` site (a real completion through the
+serving path) additionally needs the status-monitor org funded with a small
+credit grant; an unfunded request is a 429, not a 200. Once funded, uncomment
+the site and push; Setup CI regenerates the workflows.
+
+Rotate the key like any other production credential (revoke it in the platform,
+mint a new one under the same org, `gh secret set STATUS_GATEWAY_API_KEY
+--repo experientiallabs/status`); it is referenced only as
 `$STATUS_GATEWAY_API_KEY` in config and never appears in the repo, the page, or
 committed history.
 
@@ -106,6 +147,9 @@ The site is **built** on GitHub and **served** by Vercel:
 | `GH_PAT`        | The enterprise forces the default `GITHUB_TOKEN` to read-only; without a fine-grained PAT (this repo only; Contents + Issues read/write) Upptime cannot commit history, open incident issues, or push `gh-pages`. |
 | `VERCEL_TOKEN`  | Deploys the site; scoped to the `experiential-labs` Vercel team.                                                                                                                                                  |
 | `VERCEL_ORG_ID` | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
+| `PROD_OPS_AGENT_DB_URL` | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                              |
+| `STATUS_GATEWAY_API_KEY` | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                    |
+| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker and from traffic-health.                                                                                            |
 
 ## Versioning and upkeep
 
