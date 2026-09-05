@@ -12,7 +12,7 @@
     "uptimeYear": "100.00%",
     "time": 493,
     "timeDay": 410,
-    "timeWeek": 378,
+    "timeWeek": 349,
     "timeMonth": 493,
     "timeYear": 493,
     "dailyMinutesDown": {}
@@ -30,7 +30,7 @@
     "uptimeYear": "100.00%",
     "time": 388,
     "timeDay": 398,
-    "timeWeek": 291,
+    "timeWeek": 275,
     "timeMonth": 388,
     "timeYear": 388,
     "dailyMinutesDown": {}
@@ -48,9 +48,27 @@
     "uptimeYear": "100.00%",
     "time": 322,
     "timeDay": 448,
-    "timeWeek": 373,
+    "timeWeek": 361,
     "timeMonth": 322,
     "timeYear": 322,
+    "dailyMinutesDown": {}
+  },
+  {
+    "name": "Gateway (authenticated)",
+    "url": "https://api.experientiallabs.ai/v1/models",
+    "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
+    "slug": "gateway",
+    "status": "up",
+    "uptime": "100.00%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "100.00%",
+    "uptimeMonth": "100.00%",
+    "uptimeYear": "100.00%",
+    "time": 299,
+    "timeDay": 299,
+    "timeWeek": 299,
+    "timeMonth": 299,
+    "timeYear": 299,
     "dailyMinutesDown": {}
   }
 ]
