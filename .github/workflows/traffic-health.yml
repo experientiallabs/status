@@ -74,8 +74,8 @@ jobs:
               ) s
             )
             select cur.total, cur.terminal, cur.completed, cur.gateway_owned, round(base.median_15m)
-            from cur, base" 2>/tmp/psql.err)
-          status=$?
+            from cur, base" 2>/tmp/psql.err | tr -d '\n')
+          status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "database read failed:" >&2
             sed -E 's#(postgres(ql)?://)[^@]*@#\1***@#' /tmp/psql.err >&2 || true
