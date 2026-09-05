@@ -51,8 +51,7 @@ jobs:
           DB_URL: ${{ secrets.PROD_OPS_AGENT_DB_URL }}
         run: |
           set -uo pipefail
-          row=$(PGCONNECT_TIMEOUT=10 psql "$DB_URL" -X -tA -v ON_ERROR_STOP=1 -c "
-            set statement_timeout = '20s';
+          row=$(PGCONNECT_TIMEOUT=10 PGOPTIONS="-c statement_timeout=20s" psql "$DB_URL" -X -qtA -v ON_ERROR_STOP=1 -c "
             with cur as (
               select count(*) as total,
                      count(*) filter (where terminal_state is not null) as terminal,
