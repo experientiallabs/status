@@ -87,6 +87,25 @@ Two independent alert paths, both to the same Slack incoming webhook:
 2. **Traffic alerts** (this repo's workflow): reads the same
    `NOTIFICATION_SLACK_WEBHOOK_URL`; with it unset, the GitHub issue is the alert.
 
+### Why the checks are fired from Vercel, not GitHub's cron
+
+GitHub runs a scheduled workflow only when it has capacity. On this repo the
+checker's `*/5` cron landed about once every two hours (measured 2026-09-04/05),
+which would let an eight-minute API outage pass unseen. So the schedule is a
+fallback only: a Vercel Cron (`vercel/vercel.json`, every 5 minutes, Pro plan)
+calls `/api/cron/dispatch` (`vercel/api/cron/dispatch.js`, copied into the
+served root by `deploy-vercel.yml`), which sends two `repository_dispatch`
+events, `uptime` and `traffic-health`. Vercel project env (production):
+`CRON_SECRET` (Vercel presents it as the bearer token; anything else is 401) and
+`GH_DISPATCH_TOKEN` (a GitHub token with repo scope on this repo). The local
+copy of `CRON_SECRET` sits next to the probe key in the owner's
+`~/.gateway-secrets/status-monitor.env`.
+
+Known gap: `GH_PAT` lacks the `workflow` scope, so Upptime's Setup CI cannot
+push regenerated workflows (its push of `graphs.yml` is rejected). Until the PAT
+is re-scoped, `SECRETS_CONTEXT` in the generated workflows is mirrored by hand
+when the `secrets` allowlist changes.
+
 ## Enabling the gateway probes
 
 `Gateway (authenticated)` is live: the `status-monitor` organization on the

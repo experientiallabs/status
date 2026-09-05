@@ -39,6 +39,12 @@ jobs:
         run: |
           mkdir -p ui
           cp main-src/assets/status-ui/* ui/
+          # The Vercel cron (vercel.json) and its function (api/cron/dispatch.js)
+          # ride the same deploy: they trigger the GitHub checks every 5 minutes
+          # from outside GitHub's throttled scheduler (see README "Alerts").
+          cp main-src/vercel/vercel.json vercel.json
+          mkdir -p api/cron
+          cp main-src/vercel/api/cron/dispatch.js api/cron/dispatch.js
           rm -rf main-src
       - name: Setup Node.js
         uses: actions/setup-node@v6

@@ -26,8 +26,13 @@
 # outage, not a monitoring glitch.
 name: Traffic Health
 on:
+  # The schedule is a fallback: GitHub runs it only when it has capacity (the
+  # checker's identical cron landed about every two hours). The Vercel cron
+  # (vercel/api/cron/dispatch.js) fires the repository_dispatch every 5 minutes.
   schedule:
     - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [traffic-health]
   workflow_dispatch:
 concurrency:
   group: ${{ github.repository }}-traffic-health
