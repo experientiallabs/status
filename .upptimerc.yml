@@ -42,13 +42,19 @@ sites:
   # The key is the STATUS_GATEWAY_API_KEY repository secret (README "Enabling
   # the gateway probes"); if it is ever removed, disable this site first, or the
   # literal string is sent as the bearer token and the row reports a false DOWN.
-  - name: Gateway (authenticated)
-    slug: gateway
-    url: https://api.experientiallabs.ai/v1/models
-    headers:
-      - "Authorization: Bearer $STATUS_GATEWAY_API_KEY"
-    expectedStatusCodes: [200]
-    maxResponseTime: 5000
+  # DISABLED 2026-09-07: the probe key (status-monitor org, "status-page
+  # authenticated probe") was revoked on 2026-09-05 during a hand rotation that
+  # never updated STATUS_GATEWAY_API_KEY, so this row reported a false `down`
+  # for two days. Re-enable ONLY after minting a new key under the status-monitor
+  # org (README "If the Gateway (authenticated) row is red") and setting the
+  # secret; a key from any other org must never be used here.
+  # - name: Gateway (authenticated)
+  #   slug: gateway
+  #   url: https://api.experientiallabs.ai/v1/models
+  #   headers:
+  #     - "Authorization: Bearer $STATUS_GATEWAY_API_KEY"
+  #   expectedStatusCodes: [200]
+  #   maxResponseTime: 5000
   # Deeper still: a real completion through the serving path. Needs the
   # status-monitor org funded with a small credit grant first (an unfunded
   # request is a 429, not a 200), so it stays off until that is done.
@@ -102,9 +108,11 @@ status-website:
   # Brand favicon (vendored in this repo, independent of the platform).
   favicon: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo-192.png
   faviconSvg: https://raw.githubusercontent.com/experientiallabs/status/HEAD/assets/logo.svg
-  # Statuspage-style 90-day uptime bars and the dated Past Incidents section.
-  # The file lives at assets/status-ui/uptime-bars.js on main; the
-  # Deploy-to-Vercel workflow copies it into the served tree as /ui/.
+  # Statuspage-style 90-day uptime bars, the uptime percentage, and the dated
+  # Past Incidents section, all from assets/status-ui/incidents.json (curated
+  # start/end times) merged with the checker's live issues. The script lives at
+  # assets/status-ui/uptime-bars.js on main; the Deploy-to-Vercel workflow
+  # copies it into the served tree as /ui/.
   customHeadHtml: '<script defer src="/ui/uptime-bars.js"></script>'
   css: |
     :root {
@@ -203,11 +211,17 @@ status-website:
       color: #374151;
       font-variant-numeric: tabular-nums;
     }
-    /* The checker-measured average (a fresh runner's cold DNS+TLS+TTFB, about
-       200-450 ms for any endpoint) is hidden; the status-ui overlay renders
-       server-side latency from prod telemetry instead. This generator version
-       ignores showAverageResponseTime, so the hide is CSS. */
-    section.live-status article > div:not([class]):nth-of-type(2) {
+    /* Both generator metrics are hidden. The uptime figure derives downtime
+       from how long an incident ISSUE stayed open (a 15-minute blip whose
+       issue lingered a day read as ~1,440 minutes down); the status-ui legend
+       computes it from the curated incident record instead. The response
+       average is a fresh runner's cold DNS+TLS+TTFB (200-450 ms for any
+       endpoint); the overlay renders server-side latency from prod telemetry.
+       This generator version ignores showAverageResponseTime, so the hide is
+       CSS. The period selector only switches those hidden figures. */
+    section.live-status article > div:not([class]):nth-of-type(1),
+    section.live-status article > div:not([class]):nth-of-type(2),
+    main > .f form {
       display: none;
     }
     /* Past incidents: calm date headers, white cards with a colored accent. */
