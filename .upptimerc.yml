@@ -17,6 +17,11 @@ sites:
     slug: web
     url: https://platform.experientiallabs.ai/signin
     expectedStatusCodes: [200]
+    # Degraded (yellow) once a check is slow but still serving. The GitHub
+    # runner measures cold DNS+TLS+TTFB (200-750 ms normally), so 5 s flags
+    # real slowness without flapping on a cold connection. Without this the
+    # page can only ever be green or red; nothing renders degraded.
+    maxResponseTime: 5000
   # Unauthenticated /v1/models must be REJECTED BY THE APP: a 401 proves the
   # edge, gateway worker, and auth path are alive end to end. A 5xx (like the
   # 502s when the session pooler saturates) is down. Do not "fix" this to 200.
@@ -24,10 +29,12 @@ sites:
     slug: api
     url: https://api.experientiallabs.ai/v1/models
     expectedStatusCodes: [401]
+    maxResponseTime: 5000
   - name: Docs
     slug: docs
     url: https://platform.experientiallabs.ai/docs
     expectedStatusCodes: [200]
+    maxResponseTime: 5000
   # Authenticated gateway probe: the same /v1/models call as the API row, but
   # with a real key from the dedicated status-monitor org (never a customer or
   # house key). A 200 proves key auth, the gateway's Postgres path, and the
@@ -41,6 +48,7 @@ sites:
     headers:
       - "Authorization: Bearer $STATUS_GATEWAY_API_KEY"
     expectedStatusCodes: [200]
+    maxResponseTime: 5000
   # Deeper still: a real completion through the serving path. Needs the
   # status-monitor org funded with a small credit grant first (an unfunded
   # request is a 429, not a 200), so it stays off until that is done.

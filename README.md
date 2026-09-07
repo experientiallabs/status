@@ -136,6 +136,50 @@ mint a new one under the same org, `gh secret set STATUS_GATEWAY_API_KEY
 `$STATUS_GATEWAY_API_KEY` in config and never appears in the repo, the page, or
 committed history.
 
+### If the `Gateway (authenticated)` row is red
+
+**Check the probe key before assuming an outage.** This row sends
+`STATUS_GATEWAY_API_KEY` to `/v1/models` and expects `200`; a **`401`** means the
+key was rejected, i.e. **revoked or rotated without updating this repo's secret**
+— a monitoring-config problem, not a platform outage. The tell: the `API` row
+(same URL, no auth, expects `401`) stays green, and the live-traffic line on the
+`API` row shows real customer requests succeeding. This exact case put the row in
+a permanent false `down` from 2026-09-05: the probe key was revoked during a
+manual rotation that never ran `gh secret set`.
+
+Confirm and fix:
+
+```bash
+# 1. Is the key actually rejected? (401 = bad/revoked key, not an outage)
+curl -s -o /dev/null -w '%{http_code}
+'   -H "Authorization: Bearer $STATUS_GATEWAY_API_KEY"   https://api.experientiallabs.ai/v1/models
+
+# 2. Mint a fresh key under the SAME status-monitor org. Dashboard: sign in as a
+#    platform admin, open the status-monitor org's API keys, create
+#    "status-page authenticated probe". Or via the admin API with an xpladmin_ key:
+curl -s -X POST https://api.experientiallabs.ai/api/admin/orgs/1a7ba1ee-b847-46b2-a871-e517637ced41/keys   -H "Authorization: Bearer $XPLADMIN_KEY" -H 'Content-Type: application/json'   -d '{"name":"status-page authenticated probe"}' | jq -r .key
+
+# 3. Store it and re-run the checker; the row recovers and the open incident closes.
+gh secret set STATUS_GATEWAY_API_KEY --repo experientiallabs/status --body '<new xpl_ key>'
+gh workflow run "Uptime CI" --repo experientiallabs/status
+```
+
+The status-monitor org (`1a7ba1ee-b847-46b2-a871-e517637ced41`) is unverified and
+memberless by design; a `/v1/models` listing returns `200` for any live key of
+that org regardless of spend-unlock, so a fresh key is all that is needed.
+
+### Why an incident's minutes can look larger than the outage
+
+Upptime derives each component's per-day downtime and its uptime percentage from
+the **open-to-close duration of the `status`-labelled GitHub incident issue**,
+not from the individual 5-minute checks. So an issue that stays open after the
+service already recovered (a slow auto-close, or one left open by hand) is
+counted as continuous downtime — a brief blip whose issue lingered a day reads as
+~1,440 minutes down and drags the weekly uptime figure down with it. Keep the
+uptime numbers honest by closing recovered incidents promptly: the checker
+auto-closes on the next passing run, but verify stale `status` issues after any
+monitoring hiccup rather than leaving them open.
+
 ## Hosting and deploys
 
 The site is **built** on GitHub and **served** by Vercel:
