@@ -1,0 +1,143 @@
+{
+  "notes": "Curated incident record, UTC. This is the single source for the 90-day bars, the uptime percentage, and the Past Incidents section (assets/status-ui/uptime-bars.js). Each entry was reconstructed from the gateway ledger (gateway_requests per 10-minute bucket), production deploy runs, and the incident notes for that day; times are when the effect actually started and stopped, not when a monitoring issue was opened or closed. severity 'down' = requests were not being served (counts against uptime); 'degraded' = serving with elevated errors or latency (shown, not counted against uptime). Checker incidents opened as GitHub issues AFTER liveIssuesSince are merged in automatically; issue numbers in annulledIssues are monitoring artifacts and ignored.",
+  "monitoringSince": "2026-08-25",
+  "liveIssuesSince": "2026-09-07T00:00:00Z",
+  "annulledIssues": [4, 5],
+  "incidents": [
+    {
+      "id": "2026-08-27-gateway-errors",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-08-27T23:40:00Z",
+      "end": "2026-08-28T01:10:00Z",
+      "title": "Elevated gateway errors",
+      "description": "Two bursts of gateway-owned `unavailable` errors (23:40–23:59 and 00:50–01:09 UTC), peaking at most requests in a 10-minute window; requests outside the bursts completed normally."
+    },
+    {
+      "id": "2026-08-31-catalog-reload-burst",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-08-31T09:20:00Z",
+      "end": "2026-08-31T09:30:00Z",
+      "title": "Gateway error burst during catalog reload",
+      "description": "About 70% of requests in one 10-minute window failed as `unavailable` while gateway workers picked up a new catalog revision; recovered without intervention."
+    },
+    {
+      "id": "2026-09-02-catalog-publish-storms",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-02T05:50:00Z",
+      "end": "2026-09-02T07:40:00Z",
+      "title": "Elevated errors during repeated catalog publishes",
+      "description": "Back-to-back catalog publishes forced gateway workers to rebuild routing state on the request path; requests landing on a rebuilding pod failed as `unavailable` (20–35% of requests). Recurred 10:40–12:50 UTC. Root cause fixed the next day (request path no longer rebuilds the catalog)."
+    },
+    {
+      "id": "2026-09-02-catalog-publish-storms-2",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-02T10:40:00Z",
+      "end": "2026-09-02T12:50:00Z",
+      "title": "Elevated errors during repeated catalog publishes (continued)",
+      "description": "Second window of the same catalog-rebuild contention; 20–45% of requests failed as `unavailable` on affected pods."
+    },
+    {
+      "id": "2026-09-03-catalog-publish-wedge",
+      "component": "api",
+      "severity": "down",
+      "start": "2026-09-03T08:52:00Z",
+      "end": "2026-09-03T09:02:00Z",
+      "title": "Requests hung during a large catalog publish",
+      "description": "A publish repointing 732 model aliases made every gateway pod rebuild its catalog inline on the request path; requests hung with no response for ~10 minutes (zero accepted requests at 08:53). Fix deployed 17:36 UTC: the request path now only hydrates an already-published snapshot."
+    },
+    {
+      "id": "2026-09-03-slow-relays",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-03T10:10:00Z",
+      "end": "2026-09-03T10:35:00Z",
+      "title": "Slow responses after catalog repoints",
+      "description": "Further alias repoints (08:18–10:15 UTC) triggered the same inline rebuild; ~410 requests took 30 s or longer and surfaced as 503/504 before the fix landed."
+    },
+    {
+      "id": "2026-09-05-postgres-restart",
+      "component": "api",
+      "severity": "down",
+      "start": "2026-09-05T03:51:00Z",
+      "end": "2026-09-05T03:59:00Z",
+      "title": "Database restart",
+      "description": "Production Postgres shut down on an administrator command at 03:51 UTC and came back after crash recovery at 03:58:50. Gateway readiness gates on the database, so /v1 returned 503 and requests were not accepted for ~8 minutes."
+    },
+    {
+      "id": "2026-09-05-postgres-restart-web",
+      "component": "web",
+      "severity": "down",
+      "start": "2026-09-05T03:51:00Z",
+      "end": "2026-09-05T03:59:00Z",
+      "title": "Database restart",
+      "description": "Signed-in dashboard pages could not load while production Postgres restarted (03:51–03:59 UTC)."
+    },
+    {
+      "id": "2026-09-05-release-rollback",
+      "component": "web",
+      "severity": "down",
+      "start": "2026-09-05T04:57:00Z",
+      "end": "2026-09-05T05:30:00Z",
+      "title": "Dashboard down after a failed release rollback",
+      "description": "A production release failed at the gateway-worker step and its automatic rollback re-applied the web app with an empty environment group, so the dashboard returned errors. The environment was restored by hand at 05:30 UTC."
+    },
+    {
+      "id": "2026-09-05-unmapped-sqlstate",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-05T05:20:00Z",
+      "end": "2026-09-05T06:20:00Z",
+      "title": "Free-tier limit checks surfaced as internal errors",
+      "description": "A schema change landed before the gateway worker that understood it, so free-tier exhaustion rejections raised an unmapped database error code and were reported as `internal` (~170/min, 30–50% of requests). Cleared when the updated worker rolled at 06:31 UTC; paid traffic was unaffected."
+    },
+    {
+      "id": "2026-09-05-afternoon-gateway-errors",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-05T15:50:00Z",
+      "end": "2026-09-05T17:15:00Z",
+      "title": "Elevated internal errors",
+      "description": "Roughly a third of requests failed inside the gateway as `internal` under a traffic peak (7–9k requests per 10 minutes); recovered after the 17:00 UTC release rolled."
+    },
+    {
+      "id": "2026-09-05-edge-unreachable",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-05T18:21:00Z",
+      "end": "2026-09-05T18:34:00Z",
+      "title": "Edge briefly unreachable from external monitoring",
+      "description": "External checks timed out for ~13 minutes during a failed release roll (18:18–18:40 UTC); in-flight customer traffic in the ledger continued at normal volume."
+    },
+    {
+      "id": "2026-09-06-worker-oom-loop",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-06T03:00:00Z",
+      "end": "2026-09-06T09:45:00Z",
+      "title": "Gateway workers restarting on memory pressure",
+      "description": "A post-rebuild comparison introduced the previous evening ran after every catalog rebuild while connection changes triggered rebuilds about once a minute, so worker memory ratcheted to its 4 GiB limit and pods restarted repeatedly. About 5% of requests ended incomplete. Mitigated at 09:36 UTC by switching to lean catalog variants; restarts stopped by 09:50."
+    },
+    {
+      "id": "2026-09-06-dashboard-slow",
+      "component": "web",
+      "severity": "degraded",
+      "start": "2026-09-06T06:50:00Z",
+      "end": "2026-09-06T10:50:00Z",
+      "title": "Slow signed-in pages",
+      "description": "Under a signup surge (about 3k per hour), signed-in pages took 3–5 s and intermittently timed out: the grants table lacked an organization index (43.7M rows scanned per read) and the model list made five sequential reads per page. Index built at 10:02 UTC; the list was folded into one read in the same fix."
+    },
+    {
+      "id": "2026-09-06-release-502",
+      "component": "api",
+      "severity": "down",
+      "start": "2026-09-06T18:20:00Z",
+      "end": "2026-09-06T18:35:00Z",
+      "title": "Edge returned 502 during a failed release",
+      "description": "A production release (18:04–18:26 UTC) failed and its rollback left the public edge returning 502; requests were not accepted for ~15 minutes until the previous revision was restored at 18:35."
+    }
+  ]
+}

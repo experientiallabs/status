@@ -1,17 +1,22 @@
 // Statuspage-style enhancements rendered on top of Upptime's generated DOM:
-//   1. Per-day 90-day uptime bars under each component row, derived from the
-//      dailyMinutesDown map Upptime itself computes from incident issues and
-//      commits into history/summary.json on every check run. That map is the
-//      SINGLE source for both the bars and the legend percentage, the same
-//      pipeline behind Upptime's own uptime numbers, so they cannot diverge.
-//      Days before monitoring began render operational (owner decision,
-//      Aug 2026; pre-monitoring incident history lives in the ops timeline,
-//      not on this page).
+//   1. Per-day 90-day uptime bars under each component row and the uptime
+//      percentage in their legend, both derived from ONE source:
+//      assets/status-ui/incidents.json (curated, UTC, start/end = when the
+//      effect actually started and stopped) merged with the checker's own
+//      status-labelled issues opened after incidents.liveIssuesSince (minus
+//      incidents.annulledIssues, which are monitoring artifacts). Upptime's own
+//      figures derive downtime from how long an incident ISSUE stayed open,
+//      which counted a 15-minute blip whose issue lingered a day as ~1,440
+//      minutes down (2026-09-05/06); the curated record replaces that.
+//      'down' minutes count against uptime and colour a day red at an hour or
+//      more; 'degraded' minutes (serving with elevated errors/latency) colour a
+//      day yellow and do not reduce the percentage. Days before
+//      incidents.monitoringSince render operational.
 //   2. A dated "Past Incidents" section covering the last 14 days, including
-//      "No incidents reported." rows, from the repo's status-labeled issues
-//      (the same source Upptime's uptime numbers use). Upptime's own past-
-//      incidents section (which renders only dates that had incidents) is
-//      hidden when this one renders.
+//      "No incidents reported." rows, from the same merged record: each entry
+//      carries the component, the UTC time window, the duration, and a short
+//      technical description. Upptime's own past-incidents section (which
+//      renders only dates that had incidents) is hidden when this one renders.
 //
 // Loaded from .upptimerc.yml's customHeadHtml; the Deploy-to-Vercel workflow
 // copies this file into the served tree at /ui/uptime-bars.js. No secrets, no
@@ -54,7 +59,9 @@
       border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-top: 1.4rem; }
     section.ub-incidents p.ub-none { color: #9ca3af; font-size: 0.85rem; margin: 0.5rem 0 0; }
     section.ub-incidents article { margin-top: 0.5rem; }
-    section.ub-incidents article .ub-meta { color: #6b7280; font-size: 0.8rem; }
+    section.ub-incidents article .ub-meta { color: #6b7280; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+    section.ub-incidents article .ub-desc { color: #374151; font-size: 0.85rem; margin: 0.35rem 0 0; line-height: 1.45; }
+    section.ub-incidents article h4 { margin: 0 0 0.2rem 0; font-size: 0.95rem; }
   `;
   document.head.appendChild(style);
 
@@ -89,30 +96,110 @@
   const issuesPromise = fetch(
     `${API}/issues?state=all&labels=status&per_page=100`
   ).then((res) => (res.ok ? res.json() : []));
+  const EMPTY_RECORD = { monitoringSince: null, liveIssuesSince: null, annulledIssues: [], incidents: [] };
+  // Curated incident record (see header). Fetched from raw main so an edit to
+  // the record needs no redeploy, like traffic-health.json.
+  const incidentsPromise = fetch(`${RAW}/assets/status-ui/incidents.json`)
+    .then((res) => (res.ok ? res.json() : EMPTY_RECORD))
+    .catch(() => EMPTY_RECORD);
 
-  function buildStrip(site) {
-    const daily = site.dailyMinutesDown || {};
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+  // Minutes of [start, end) that fall on each UTC day, as { "YYYY-MM-DD": minutes }.
+  function minutesByDay(start, end) {
+    const out = {};
+    let cursor = new Date(start);
+    const stop = new Date(end);
+    while (cursor < stop) {
+      const dayEnd = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate()) + MS_PER_DAY);
+      const sliceEnd = dayEnd < stop ? dayEnd : stop;
+      const key = utcKey(cursor);
+      out[key] = (out[key] || 0) + (sliceEnd - cursor) / 60000;
+      cursor = sliceEnd;
+    }
+    return out;
+  }
+
+  // One list of { component, severity, start, end, title, description, href }
+  // from the curated record plus the checker's live issues it does not annul.
+  function mergedIncidents(record, issues) {
+    const list = (record.incidents || []).map((incident) => ({ ...incident, href: null }));
+    const since = record.liveIssuesSince ? new Date(record.liveIssuesSince) : null;
+    const annulled = new Set(record.annulledIssues || []);
+    (issues || [])
+      .filter((issue) => !issue.pull_request && !annulled.has(issue.number))
+      .filter((issue) => !since || new Date(issue.created_at) >= since)
+      .forEach((issue) => {
+        const labels = (issue.labels || []).map((label) => (typeof label === "string" ? label : label.name));
+        const component = labels.find((label) => label !== "status") || "api";
+        list.push({
+          id: `issue-${issue.number}`,
+          component,
+          severity: labels.includes("degraded") ? "degraded" : "down",
+          start: issue.created_at,
+          end: issue.closed_at || new Date().toISOString(),
+          ongoing: !issue.closed_at,
+          title: issue.title.replace("🛑", "").replace("⚠️", "").trim(),
+          description: "Detected by the external checker; see the incident page for the check results.",
+          href: `/incident/${issue.number}`,
+        });
+      });
+    return list;
+  }
+
+  const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway" };
+  const hhmm = (iso) => new Date(iso).toISOString().slice(11, 16);
+
+  function buildStrip(slug, record, incidents) {
+    const down = {};
+    const degraded = {};
+    const titles = {};
+    incidents
+      .filter((incident) => incident.component === slug)
+      .forEach((incident) => {
+        const target = incident.severity === "down" ? down : degraded;
+        Object.entries(minutesByDay(incident.start, incident.end)).forEach(([key, minutes]) => {
+          target[key] = (target[key] || 0) + minutes;
+          (titles[key] = titles[key] || []).push(`${incident.title} (${incident.severity})`);
+        });
+      });
+    const since = record.monitoringSince ? new Date(`${record.monitoringSince}T00:00:00Z`) : null;
     const strip = document.createElement("div");
     strip.className = "ub-strip";
     let downMinutes = 0;
+    let monitoredMinutes = 0;
+    const now = new Date();
     for (let i = BAR_DAYS - 1; i >= 0; i -= 1) {
-      const key = utcKey(daysAgo(i));
+      const day = daysAgo(i);
+      const key = utcKey(day);
       const bar = document.createElement("span");
-      const minutes = daily[key] || 0;
-      downMinutes += minutes;
-      // Color severity follows downtime share of the day: an hour or more
-      // reads as an outage, anything shorter as a partial disruption.
-      bar.className = minutes === 0 ? "" : minutes >= 60 ? "ub-down" : "ub-partial";
-      bar.title =
-        minutes === 0
-          ? `${prettyDate(key)}: no downtime`
-          : `${prettyDate(key)}: down ${minutes} min`;
+      const d = Math.round(down[key] || 0);
+      const g = Math.round(degraded[key] || 0);
+      const monitored = !since || new Date(`${key}T00:00:00Z`) >= since;
+      if (monitored) {
+        downMinutes += d;
+        // Today counts only the minutes elapsed so far.
+        const dayStart = new Date(`${key}T00:00:00Z`);
+        const elapsed = i === 0 ? (now - dayStart) / 60000 : 24 * 60;
+        monitoredMinutes += Math.max(elapsed, d);
+      }
+      // Red for an hour or more of not serving; yellow for a shorter outage or
+      // any degraded period; green otherwise.
+      bar.className = d >= 60 ? "ub-down" : d > 0 || g > 0 ? "ub-partial" : "";
+      const parts = [];
+      if (d) parts.push(`down ${d} min`);
+      if (g) parts.push(`degraded ${g} min`);
+      bar.title = parts.length
+        ? `${prettyDate(key)}: ${parts.join(", ")} — ${[...new Set(titles[key])].join("; ")}`
+        : `${prettyDate(key)}: ${monitored ? "no incidents" : "before monitoring began"}`;
       strip.appendChild(bar);
     }
-    const uptimePct = (100 * (1 - downMinutes / (BAR_DAYS * 24 * 60))).toFixed(2);
+    const uptimePct = monitoredMinutes
+      ? (100 * (1 - downMinutes / monitoredMinutes)).toFixed(2)
+      : "100.00";
     const legend = document.createElement("div");
     legend.className = "ub-legend";
-    legend.innerHTML = `<span>${BAR_DAYS} days ago</span><b>${uptimePct}&thinsp;% uptime</b><span>Today</span>`;
+    legend.innerHTML = `<span>${BAR_DAYS} days ago</span><b title="Share of monitored minutes the component was serving. Degraded periods (yellow) are shown but not counted as downtime.">${uptimePct}&thinsp;% uptime</b><span>Today</span>`;
     const wrap = document.createElement("div");
     wrap.className = "ub-wrap";
     wrap.appendChild(strip);
@@ -156,7 +243,8 @@
     }
   }
 
-  function renderBars([sites, latency, traffic]) {
+  function renderBars([sites, latency, traffic, record, issues]) {
+    const incidents = mergedIncidents(record, issues);
     const latencyComponents = (latency && latency.components) || {};
     document.querySelectorAll("section.live-status article").forEach((row) => {
       if (row.querySelector(".ub-strip")) return;
@@ -176,7 +264,7 @@
         const live = trafficMetric(traffic);
         if (live) row.appendChild(live);
       }
-      row.appendChild(buildStrip(site));
+      row.appendChild(buildStrip(slug, record, incidents));
     });
     // Outside the per-row guard on purpose: Svelte rewrites the banner's class
     // attribute when its data settles, which drops any class added earlier, so
@@ -188,7 +276,7 @@
     reflectTrafficState(apiRow || null, traffic);
   }
 
-  function renderIncidents(issues) {
+  function renderIncidents([record, issues]) {
     if (document.querySelector("section.ub-incidents")) return;
     const main = document.querySelector("main");
     if (!main) return;
@@ -200,7 +288,7 @@
       }
     });
 
-    const incidents = issues.filter((issue) => !issue.pull_request);
+    const incidents = mergedIncidents(record, issues).sort((a, b) => new Date(a.start) - new Date(b.start));
     const section = document.createElement("section");
     section.className = "ub-incidents";
     const title = document.createElement("h2");
@@ -212,9 +300,8 @@
       const heading = document.createElement("h3");
       heading.textContent = prettyDate(key);
       section.appendChild(heading);
-      const dayIncidents = incidents.filter(
-        (issue) => utcKey(new Date(issue.created_at)) === key
-      );
+      // An incident is listed on the day it started.
+      const dayIncidents = incidents.filter((incident) => utcKey(new Date(incident.start)) === key);
       if (!dayIncidents.length) {
         const none = document.createElement("p");
         none.className = "ub-none";
@@ -222,27 +309,33 @@
         section.appendChild(none);
         continue;
       }
-      dayIncidents.forEach((issue) => {
+      dayIncidents.forEach((incident) => {
         const article = document.createElement("article");
-        article.className = "down";
+        article.className = incident.severity === "down" ? "down" : "degraded";
         const name = document.createElement("h4");
-        const link = document.createElement("a");
-        link.href = `/incident/${issue.number}`;
-        link.textContent = issue.title.replace("🛑", "").replace("⚠️", "").trim();
-        name.appendChild(link);
+        if (incident.href) {
+          const link = document.createElement("a");
+          link.href = incident.href;
+          link.textContent = incident.title;
+          name.appendChild(link);
+        } else {
+          name.textContent = incident.title;
+        }
         const meta = document.createElement("div");
         meta.className = "ub-meta";
-        if (issue.closed_at) {
-          const minutes = Math.max(
-            1,
-            Math.round((new Date(issue.closed_at) - new Date(issue.created_at)) / 60000)
-          );
-          meta.textContent = `Resolved after ${minutes} min`;
-        } else {
-          meta.textContent = "Ongoing";
-        }
+        const minutes = Math.max(1, Math.round((new Date(incident.end) - new Date(incident.start)) / 60000));
+        const component = COMPONENT_LABELS[incident.component] || incident.component;
+        const window = incident.ongoing
+          ? `${hhmm(incident.start)} UTC – ongoing`
+          : `${hhmm(incident.start)}–${hhmm(incident.end)} UTC · ${minutes} min`;
+        const state = incident.severity === "down" ? "Outage" : "Degraded";
+        meta.textContent = `${component} · ${state} · ${window}`;
+        const body = document.createElement("p");
+        body.className = "ub-desc";
+        body.textContent = incident.description || "";
         article.appendChild(name);
         article.appendChild(meta);
+        if (incident.description) article.appendChild(body);
         section.appendChild(article);
       });
     }
@@ -258,8 +351,10 @@
       return false;
     }
     if (!document.querySelector("section.live-status article")) return false;
-    Promise.all([summaryPromise, latencyPromise, trafficPromise]).then(renderBars).catch(() => {});
-    issuesPromise.then(renderIncidents).catch(() => {});
+    Promise.all([summaryPromise, latencyPromise, trafficPromise, incidentsPromise, issuesPromise])
+      .then(renderBars)
+      .catch(() => {});
+    Promise.all([incidentsPromise, issuesPromise]).then(renderIncidents).catch(() => {});
     return true;
   }
 

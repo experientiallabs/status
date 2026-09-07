@@ -27,16 +27,31 @@ that touches the config. Change the config, not the workflows.
 
 ## Posting an incident or maintenance notice
 
-Incidents are GitHub Issues on this repository.
+The page's 90-day bars, uptime percentages, and dated Past Incidents section all
+read ONE record: `assets/status-ui/incidents.json` (curated) merged with the
+checker's live `status`-labelled issues opened after the record's
+`liveIssuesSince`. Edits to the JSON take effect on the next page load (it is
+fetched from raw `main`); no redeploy.
 
 - **Automatic:** when a check fails, Upptime opens an issue labeled `status` and
-  `down` (or `degraded`), assigns it, and shows it on the status page. When the
-  check recovers, the issue is closed automatically and becomes part of the
-  incident history.
-- **Manual incident:** open an issue with the `status` label. Add the label
-  matching the affected component's slug (`web`, `api`, `docs`, `gateway`) to
-  attach it to that component. The issue title is the incident headline; comments
-  are updates. Close the issue to resolve it.
+  the component slug, assigns it, and the page lists it from its `created_at`
+  until it is closed. When the check recovers the issue is closed automatically.
+  If an issue turns out to be a monitoring artifact (revoked probe key, runner
+  network blip, an issue that lingered open after recovery), add its number to
+  `annulledIssues` in the JSON and remove its `status` label so neither the page
+  nor Upptime counts it.
+- **Curated incident (the normal way to record what actually happened):** add an
+  entry to `incidents` with `component` (`api`, `web`, `docs`), `severity`
+  (`down` = not serving, counts against uptime; `degraded` = serving with
+  elevated errors or latency, shown in yellow, not counted), UTC `start`/`end`
+  set to when the effect actually started and stopped (from the gateway ledger,
+  deploy runs, or logs — not when an issue was opened or closed), a short
+  `title`, and a one- or two-sentence technical `description` (what failed,
+  why, what fixed it, with the fix time). Keep entries minimal and factual.
+- **Manual incident via issue:** open an issue with the `status` label and the
+  component slug label. The issue title is the headline; comments are updates.
+  Close the issue to resolve it; the page shows the open-to-close window as the
+  duration, so close it when the effect ends, not later.
 - **Scheduled maintenance:** open an issue with the `maintenance` label and put
   the window in an HTML comment in the body (slugs are comma-separated):
 
@@ -119,9 +134,12 @@ when the `secrets` allowlist changes.
 
 ## Enabling the gateway probes
 
-`Gateway (authenticated)` is live: the `status-monitor` organization on the
-platform (slug `status-monitor`, key named "status-page authenticated probe")
-holds the `STATUS_GATEWAY_API_KEY` secret. Never point this at a customer or
+`Gateway (authenticated)` is currently DISABLED (commented out in
+`.upptimerc.yml` since 2026-09-07): its probe key was revoked on 2026-09-05 and
+no replacement has been minted, so the row would only report a false `down`.
+When enabled, the `status-monitor` organization on the platform (slug
+`status-monitor`, key named "status-page authenticated probe") holds the
+`STATUS_GATEWAY_API_KEY` secret. Never point this at a customer or
 house org key: the key sits in this repo's Actions secrets and is sent from
 GitHub runners.
 
