@@ -10,11 +10,11 @@
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 483,
-    "timeDay": 439,
-    "timeWeek": 320,
-    "timeMonth": 483,
-    "timeYear": 483,
+    "time": 474,
+    "timeDay": 289,
+    "timeWeek": 344,
+    "timeMonth": 474,
+    "timeYear": 474,
     "dailyMinutesDown": {}
   },
   {
@@ -23,20 +23,17 @@
     "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
     "slug": "api",
     "status": "up",
-    "uptime": "91.83%",
-    "uptimeDay": "28.73%",
-    "uptimeWeek": "85.67%",
-    "uptimeMonth": "91.83%",
-    "uptimeYear": "91.83%",
-    "time": 814,
-    "timeDay": 3697,
-    "timeWeek": 1403,
-    "timeMonth": 814,
-    "timeYear": 814,
-    "dailyMinutesDown": {
-      "2026-09-06": 1115,
-      "2026-09-05": 329
-    }
+    "uptime": "100.00%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "100.00%",
+    "uptimeMonth": "100.00%",
+    "uptimeYear": "100.00%",
+    "time": 791,
+    "timeDay": 268,
+    "timeWeek": 1419,
+    "timeMonth": 791,
+    "timeYear": 791,
+    "dailyMinutesDown": {}
   },
   {
     "name": "Docs",
@@ -49,33 +46,11 @@
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 330,
-    "timeDay": 427,
-    "timeWeek": 322,
-    "timeMonth": 330,
-    "timeYear": 330,
+    "time": 333,
+    "timeDay": 377,
+    "timeWeek": 357,
+    "timeMonth": 333,
+    "timeYear": 333,
     "dailyMinutesDown": {}
-  },
-  {
-    "name": "Gateway (authenticated)",
-    "url": "https://api.experientiallabs.ai/v1/models",
-    "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
-    "slug": "gateway",
-    "status": "down",
-    "uptime": "30.44%",
-    "uptimeDay": "0.00%",
-    "uptimeWeek": "30.44%",
-    "uptimeMonth": "30.44%",
-    "uptimeYear": "30.44%",
-    "time": 266,
-    "timeDay": 241,
-    "timeWeek": 266,
-    "timeMonth": 266,
-    "timeYear": 266,
-    "dailyMinutesDown": {
-      "2026-09-07": 89,
-      "2026-09-06": 1440,
-      "2026-09-05": 339
-    }
   }
 ]
