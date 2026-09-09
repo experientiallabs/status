@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-09T03:02:09Z",
+  "generatedAt": "2026-09-09T03:07:09Z",
   "windowMinutes": 15,
   "notes": "Health derived from real customer traffic in the gateway ledger (gateway_requests), refreshed every 5 minutes by the traffic-health workflow. gatewayErrorPct counts only failures the gateway owns (internal, unavailable); customer rejections (quota, invalid request) and upstream provider errors are excluded. baselineRequests is the 7-day median request count for this 15-minute slot at this hour.",
   "consecutiveDbFailures": 0,
   "figures": {
-    "requests": 6627,
-    "terminal": 6540,
-    "completed": 4366,
-    "gatewayOwnedFailures": 1,
-    "gatewayErrorPct": 0.02,
+    "requests": 6739,
+    "terminal": 6646,
+    "completed": 4524,
+    "gatewayOwnedFailures": 0,
+    "gatewayErrorPct": 0.0,
     "baselineRequests": 5851
   },
   "verdict": "ok",
