@@ -287,17 +287,23 @@
     reflectTrafficState(apiRow || null, traffic);
   }
 
+  // Upptime's own past-incidents list renders only dates that had incidents;
+  // the dated section below supersedes it. Svelte renders that list AFTER its
+  // own issues fetch settles, i.e. usually after our first pass, so this runs on
+  // every enhance pass (idempotent), not once inside renderIncidents: applied
+  // once it left two "Past Incidents" sections on the page (seen 2026-09-13).
+  function hideNativeIncidents() {
+    document.querySelectorAll("main > section > h2").forEach((heading) => {
+      if (heading.textContent.trim().toLowerCase() === "past incidents" && !heading.parentElement.classList.contains("ub-incidents")) {
+        heading.parentElement.style.display = "none";
+      }
+    });
+  }
+
   function renderIncidents([record, issues]) {
     if (document.querySelector("section.ub-incidents")) return;
     const main = document.querySelector("main");
     if (!main) return;
-    // Upptime's own past-incidents list renders only dates that had
-    // incidents; this dated section supersedes it.
-    document.querySelectorAll("main > section > h2").forEach((heading) => {
-      if (heading.textContent.trim().toLowerCase() === "past incidents") {
-        heading.parentElement.style.display = "none";
-      }
-    });
 
     const incidents = mergedIncidents(record, issues).sort((a, b) => new Date(a.start) - new Date(b.start));
     const section = document.createElement("section");
@@ -362,6 +368,7 @@
       return false;
     }
     if (!document.querySelector("section.live-status article")) return false;
+    hideNativeIncidents();
     Promise.all([summaryPromise, latencyPromise, trafficPromise, incidentsPromise, issuesPromise])
       .then(renderBars)
       .catch(() => {});
