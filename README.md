@@ -67,6 +67,110 @@ fetched from raw `main`); no redeploy.
   During the window the listed components fail without opening a new incident,
   and Upptime closes and locks the issue automatically once `end` passes.
 
+## Subscriptions
+
+Anyone can follow incidents without watching the page. Everything below reads
+the same merged record the page renders (curated `incidents.json` plus the
+checker's live `status` issues after `liveIssuesSince`, minus
+`annulledIssues`), so a subscriber never sees something the page does not.
+
+- **Atom feed:** `https://status.experientiallabs.ai/feed.xml` (`/feed`
+  redirects there; the page carries a `<link rel="alternate">` for feed
+  readers). One entry per incident: title `Outage|Degraded: <component> —
+  <title>` with "(ongoing)" while open, the UTC window, the duration, the
+  description, and a link to the incident page (checker issues) or the status
+  page (curated entries). Ids are stable
+  (`tag:status.experientiallabs.ai,2026:<incident id>`); an entry's `updated`
+  is its end, or now while it is ongoing, and the feed's `updated` is the
+  newest entry. The XML is `assets/status-ui/feed.xml`, rebuilt by `feed.yml`
+  (hand-maintained) whenever a `status` issue is opened, edited, labelled,
+  or closed, when the curated record or the merge code changes, hourly as a
+  fallback, or by hand; it commits only when the bytes changed and runs in
+  Upptime's concurrency group because it pushes to main. The builder,
+  `scripts/build-feed.mjs`, does not re-implement the merge: it evaluates the
+  `mergedIncidents` block of `uptime-bars.js` between its `@shared-begin` /
+  `@shared-end` markers verbatim (`tests/feed.test.mjs` guards that). Serving:
+  `vercel/vercel.json` rewrites `/feed.xml` to `/api/feed`, a proxy that reads
+  the XML from raw `main` and sets `Content-Type: application/atom+xml` with a
+  60 s edge cache (raw GitHub serves it as text/plain, and reading raw main
+  means a rebuild needs no redeploy).
+- **Slack, zero setup:** in any channel run
+  `/feed subscribe https://status.experientiallabs.ai/feed.xml` (Slack's
+  built-in RSS app). Slack polls the feed; expect a few minutes of delay.
+- **Slack, "Add to Slack" (self-service, owner enables):** a Slack app with
+  only the `incoming-webhook` scope. The button on the page (rendered when
+  `assets/status-ui/subscribe.json` says `slackAppEnabled: true`) goes to
+  `/api/slack/install`, which redirects to Slack OAuth with a signed, cookie-
+  bound `state`; `/api/slack/callback` exchanges the code, receives the
+  channel's incoming webhook, stores it, posts a confirmation to the channel,
+  and shows "Subscribed #channel in <team>". Subscriber webhooks are secrets,
+  so they are stored in **Vercel Edge Config**, never in this repo: one item
+  per channel (`sub_<team_id>_<channel_id>`), read through the `EDGE_CONFIG`
+  connection string, written through the Vercel REST API with `VERCEL_TOKEN`.
+  Edge Config is 64 KB on Pro (a few hundred channels); past that, move the
+  store to Vercel KV behind the same `createStore` interface
+  (`vercel/api/_lib/edge-config.mjs`). To unsubscribe, a workspace removes
+  the app from the channel; the next post to a webhook Slack reports as gone
+  (HTTP 404/410, `no_service`, `channel_not_found`, `channel_is_archived`)
+  deletes the subscriber.
+- **Fan-out:** `POST /api/notify` (Bearer `NOTIFY_TOKEN`, body
+  `{event: opened|closed, component, state: down|degraded, title, url,
+  duration}`) posts one message to the internal channel
+  (`NOTIFICATION_SLACK_WEBHOOK_URL`, with the owner mention on a down opening)
+  and, without the mention, to every subscriber, best effort with a 5 s
+  timeout per webhook. `?dry_run=1` returns the payloads and subscriber count
+  without posting. Without `NOTIFY_TOKEN` in the Vercel env every call is 503,
+  so an unconfigured endpoint can never be used to spam subscribers.
+  `slack-mention.yml` calls it when the repo secret `NOTIFY_TOKEN` is set and
+  otherwise posts the internal channel directly from the runner; both paths
+  word the message with `vercel/api/_lib/message.mjs`, the one place the text
+  lives.
+- **Webhook / other:** the JSON record is public at
+  `https://raw.githubusercontent.com/experientiallabs/status/main/assets/status-ui/incidents.json`
+  and the live issues at
+  `https://api.github.com/repos/experientiallabs/status/issues?labels=status`;
+  the feed is the stable, merged view of both.
+
+### Enabling "Add to Slack" (owner)
+
+Nothing here is required for the feed or the `/feed subscribe` path; those work
+as soon as this is merged and deployed.
+
+1. Create the Slack app from the manifest: <https://api.slack.com/apps> →
+   Create New App → From a manifest → pick the Experiential Labs workspace →
+   paste `slack-app-manifest.yml`. Under **Manage Distribution**, activate
+   public distribution (other workspaces must be able to install it). Copy the
+   **Client ID** and **Client Secret** from Basic Information.
+2. Create the Edge Config store (Vercel dashboard → Storage → Edge Config, or
+   `POST https://api.vercel.com/v1/edge-config?teamId=<VERCEL_ORG_ID>` with the
+   Vercel token) and connect it to the `status` project; that adds the
+   `EDGE_CONFIG` connection string to the project env.
+3. Generate one shared token and set it in both places:
+
+   ```bash
+   NOTIFY_TOKEN=$(openssl rand -hex 32)
+   gh secret set NOTIFY_TOKEN --repo experientiallabs/status --body "$NOTIFY_TOKEN"
+   npx -y vercel@59.5.0 env add NOTIFY_TOKEN production --token "$VERCEL_TOKEN" --scope experiential-labs <<< "$NOTIFY_TOKEN"
+   ```
+
+4. Vercel project env (production), all required for the install flow:
+   `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`, `EDGE_CONFIG` (from step 2),
+   `VERCEL_TOKEN` (a token that can write Edge Config in the team; a dedicated
+   token is better than reusing the deploy token), `VERCEL_ORG_ID` (team id,
+   used as `teamId` on writes), `NOTIFY_TOKEN` (step 3), and
+   `NOTIFICATION_SLACK_WEBHOOK_URL` (the internal channel, same value as the
+   repo secret) so `/api/notify` can post it. Redeploy (Deploy to Vercel →
+   Run workflow) so the functions see the new env.
+5. Flip `slackAppEnabled` to `true` in `assets/status-ui/subscribe.json` and
+   push; the button appears on the next page load. Test the whole chain from
+   the Actions tab: Slack Mention → Run workflow with `dry_run` off,
+   `action: closed`, `state: degraded` (a harmless recovery line reaches the
+   internal channel and every subscriber).
+
+If any env is missing, `/api/slack/install` returns a 503 page ("Slack
+subscriptions are not enabled yet") that points at the `/feed subscribe`
+path, and `/api/notify` returns 503; both log which variable is missing.
+
 ## Live traffic health (real customer requests)
 
 Synthetic checks prove the door opens; they cannot see whether the requests
@@ -118,7 +222,7 @@ next transition. Issue #13 (2026-09-12) stayed open 17 h 26 min that way for a
 put the API at 27% uptime for the day.
 
 Rule: **every hand-maintained workflow that pushes to `main` uses the same
-group** (`traffic-health.yml` and `server-latency.yml` do), never with
+group** (`traffic-health.yml`, `server-latency.yml` and `feed.yml` do), never with
 `cancel-in-progress: true` (a cancel would hit whichever checker run holds the
 group), and keeps the `git pull --rebase` retry loop as a second line of
 defence. `deploy-vercel.yml` does not push and keeps its own group.
@@ -156,10 +260,13 @@ Three alert paths, all to the same Slack incoming webhook
    "`<name> is down`" issue is opened it posts `<@U0B6Y9K9C00>` (the owner's
    Slack user id) followed by the outage, the status page, and the issue link;
    a degraded incident posts without a mention; closing posts a recovery line
-   with the open-to-close duration. With the webhook secret unset it logs
-   "webhook not configured" and exits green. Test it without an incident from
-   the Actions tab (Run workflow, `dry_run` on prints the payload instead of
-   posting; off posts a clearly simulated message).
+   with the open-to-close duration. With the repo secret `NOTIFY_TOKEN` set the
+   event goes through `/api/notify`, which also reaches every self-service
+   Slack subscriber (see Subscriptions); otherwise the runner posts the
+   internal channel directly. With nothing configured it logs "webhook not
+   configured" and exits green. Test it without an incident from the Actions
+   tab (Run workflow, `dry_run` on prints the payload instead of posting; off
+   posts a clearly simulated message).
 
 Neither secret is set today, so the only alert has been the GitHub issue and
 its assignee email. To turn Slack on, set both:
@@ -280,8 +387,13 @@ The site is **built** on GitHub and **served** by Vercel:
   Upptime-generated) runs after every successful Static Site CI (or manually
   via workflow_dispatch) and ships the `gh-pages` tree to the Vercel project
   `status` (team `experiential-labs`) with a pinned `vercel@59.5.0` CLI.
-  Between deploys the page still updates live: uptime numbers and incidents
-  are fetched client-side from the GitHub API.
+  `assets/status-ui/*` is overlaid at `/ui/` and the whole `vercel/` tree
+  (`vercel.json`, `api/cron/*`, `api/feed.js`, `api/notify.js`,
+  `api/slack/*`, shared code in `api/_lib/`) at the root; anything under
+  `vercel/api/` becomes a serverless function, `_lib` is skipped by Vercel's
+  underscore rule. Unit tests for that code: `node --test 'tests/*.test.mjs'`
+  (`tests.yml`). Between deploys the page still updates live: uptime numbers
+  and incidents are fetched client-side from the GitHub API.
 - Deployment protection is disabled on the Vercel project on purpose: a public
   status page must be reachable by anyone.
 - **Statuspage-style UI** (90-day per-day uptime bars under each component,
@@ -310,7 +422,8 @@ The site is **built** on GitHub and **served** by Vercel:
 | `VERCEL_ORG_ID`                                        | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
 | `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
 | `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
-| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts). Not set as of 2026-09-13.                                                               |
+| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts).                                                                                         |
+| `NOTIFY_TOKEN`                                         | Optional: shared secret for `POST /api/notify`; the same value goes in the Vercel env (see Subscriptions). Unset = the mention workflow posts the internal webhook directly.                                      |
 
 ## Versioning and upkeep
 
