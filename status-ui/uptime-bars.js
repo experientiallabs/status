@@ -39,7 +39,12 @@
     .ub-legend { display: flex; justify-content: space-between; align-items: center;
       margin-top: 0.4rem; font-size: 0.75rem; color: #9ca3af; }
     .ub-legend b { color: #6b7280; font-weight: 600; }
-    .ub-metric { display: inline-block; margin-right: 1.25rem; font-size: 0.8rem; color: #6b7280; }
+    /* The metrics sit in their own flex row UNDER the title, cleared past the
+       theme's floated status pill: appended inline they ran under the pill on
+       the API row at desktop widths ("last 15 min)" through "Operational"). */
+    .ub-metrics { display: flex; flex-wrap: wrap; gap: 0.15rem 1.25rem; clear: both;
+      margin-top: 0.35rem; padding-right: 0; }
+    .ub-metric { display: inline-block; font-size: 0.8rem; color: #6b7280; }
     .ub-metric-value { color: #374151; font-variant-numeric: tabular-nums; }
     .ub-metric-note { color: #9ca3af; }
     .ub-metric-value.ub-metric-degraded { color: #b7791f; font-weight: 600; }
@@ -257,16 +262,19 @@
       const site = sites.find((entry) => entry.slug === slug);
       if (!site) return;
       const lat = latencyComponents[slug];
+      const metrics = document.createElement("div");
+      metrics.className = "ub-metrics";
       if (lat && typeof lat.p50Ms === "number") {
         const metric = document.createElement("div");
         metric.className = "ub-metric";
         metric.innerHTML = `${lat.label}: <span class="ub-metric-value">${Math.round(lat.p50Ms)} ms</span> <span class="ub-metric-note">(server-side p50, ${lat.windowDays}d)</span>`;
-        row.appendChild(metric);
+        metrics.appendChild(metric);
       }
       if (slug === "api") {
         const live = trafficMetric(traffic);
-        if (live) row.appendChild(live);
+        if (live) metrics.appendChild(live);
       }
+      if (metrics.childElementCount) row.appendChild(metrics);
       row.appendChild(buildStrip(slug, record, incidents));
     });
     // Outside the per-row guard on purpose: Svelte rewrites the banner's class
