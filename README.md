@@ -310,7 +310,7 @@ The site is **built** on GitHub and **served** by Vercel:
 | `VERCEL_ORG_ID`                                        | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
 | `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
 | `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
-| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts). Not set as of 2026-09-13.                                                             |
+| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts). Not set as of 2026-09-13.                                                               |
 
 ## Versioning and upkeep
 
