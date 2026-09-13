@@ -34,8 +34,15 @@ on:
   repository_dispatch:
     types: [traffic-health]
   workflow_dispatch:
+# Same group as Upptime's generated workflows (uptime, response-time, graphs,
+# summary). Anything that pushes to main MUST share it: upptime/uptime-monitor
+# pushes without rebasing, so a traffic-health push landing while the checker
+# ran killed the checker's run ("! [rejected] main -> main (fetch first)"),
+# and when that happened on a recovery the incident issue stayed open for
+# hours (issue #13, 2026-09-12). Serializing the pushes removes the race; the
+# rebase loop in "Commit if changed" stays as a second line of defence.
 concurrency:
-  group: ${{ github.repository }}-traffic-health
+  group: ${{ github.repository }}-${{ github.head_ref || github.ref_name }}-upptime
   cancel-in-progress: false
 permissions:
   contents: write

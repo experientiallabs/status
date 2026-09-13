@@ -10,9 +10,13 @@ on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
+# Same group as Upptime's generated workflows: this job pushes to main, and
+# Upptime's checker pushes without rebasing (see traffic-health.yml). Never
+# cancel-in-progress here: a cancel would hit whichever checker run holds the
+# group.
 concurrency:
-  group: ${{ github.repository }}-server-latency
-  cancel-in-progress: true
+  group: ${{ github.repository }}-${{ github.head_ref || github.ref_name }}-upptime
+  cancel-in-progress: false
 jobs:
   refresh:
     name: Refresh server-side latency
@@ -55,4 +59,10 @@ jobs:
           git add assets/status-ui/server-latency.json
           git diff --cached --quiet && { echo "No change."; exit 0; }
           git commit -m ":chart_with_upwards_trend: Refresh server-side latency [skip ci]"
-          git push
+          # Rebase over whatever the Upptime bots landed while this job ran
+          # instead of failing the push (same loop as traffic-health.yml).
+          for _ in 1 2 3; do
+            git push && exit 0
+            git pull --rebase --autostash && continue
+          done
+          exit 1
