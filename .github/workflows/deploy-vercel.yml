@@ -43,8 +43,11 @@ jobs:
           # ride the same deploy: they trigger the GitHub checks every 5 minutes
           # from outside GitHub's throttled scheduler (see README "Alerts").
           cp main-src/vercel/vercel.json vercel.json
-          mkdir -p api/cron
-          cp main-src/vercel/api/cron/*.js api/cron/
+          # /api/feed (Atom proxy), /api/notify (Slack fan-out) and
+          # /api/slack/* (Add to Slack) ride along too; api/_lib holds their
+          # shared code (underscore-prefixed, so not deployed as functions).
+          mkdir -p api
+          cp -R main-src/vercel/api/. api/
           rm -rf main-src
       - name: Setup Node.js
         uses: actions/setup-node@v6
