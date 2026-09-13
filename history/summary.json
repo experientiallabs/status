@@ -23,19 +23,18 @@
     "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
     "slug": "api",
     "status": "up",
-    "uptime": "96.02%",
-    "uptimeDay": "27.02%",
-    "uptimeWeek": "89.34%",
-    "uptimeMonth": "96.02%",
-    "uptimeYear": "96.02%",
+    "uptime": "99.91%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "99.76%",
+    "uptimeMonth": "99.91%",
+    "uptimeYear": "99.91%",
     "time": 3276,
-    "timeDay": 7909,
-    "timeWeek": 6171,
+    "timeDay": 9252,
+    "timeWeek": 5943,
     "timeMonth": 3276,
     "timeYear": 3276,
     "dailyMinutesDown": {
-      "2026-09-12": 340,
-      "2026-09-13": 735
+      "2026-09-12": 24
     }
   },
   {
