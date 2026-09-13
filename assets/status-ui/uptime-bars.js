@@ -135,11 +135,14 @@
         list.push({
           id: `issue-${issue.number}`,
           component,
-          severity: labels.includes("degraded") ? "degraded" : "down",
+          // Upptime labels a degraded incident only `status` + slug; the state
+          // is in the title ("⚠️ API has degraded performance"). Without this a
+          // 24-minute slow window renders as an Outage and counts against uptime.
+          severity: labels.includes("degraded") || /degraded performance/i.test(issue.title || "") ? "degraded" : "down",
           start: issue.created_at,
           end: issue.closed_at || new Date().toISOString(),
           ongoing: !issue.closed_at,
-          title: issue.title.replace("🛑", "").replace("⚠️", "").trim(),
+          title: issue.title.replace("🛑", "").replace("🟥", "").replace("⚠️", "").trim(),
           description: "Detected by the external checker; see the incident page for the check results.",
           href: `/incident/${issue.number}`,
         });
