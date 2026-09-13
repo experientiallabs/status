@@ -35,11 +35,12 @@ fetched from raw `main`); no redeploy.
 
 - **Automatic:** when a check fails, Upptime opens an issue labeled `status` and
   the component slug, assigns it, and the page lists it from its `created_at`
-  until it is closed. When the check recovers the issue is closed automatically.
-  If an issue turns out to be a monitoring artifact (revoked probe key, runner
-  network blip, an issue that lingered open after recovery), add its number to
-  `annulledIssues` in the JSON and remove its `status` label so neither the page
-  nor Upptime counts it.
+  until it is closed. When the check recovers the issue is closed automatically;
+  if that closing run fails, the stale-incident reconciler (below) closes it
+  within 15 minutes. If an issue turns out to be a monitoring artifact (revoked
+  probe key, runner network blip, an issue that lingered open after recovery),
+  add its number to `annulledIssues` in the JSON and remove its `status` label
+  so neither the page nor Upptime counts it.
 - **Curated incident (the normal way to record what actually happened):** add an
   entry to `incidents` with `component` (`api`, `web`, `docs`), `severity`
   (`down` = not serving, counts against uptime; `degraded` = serving with
@@ -98,9 +99,48 @@ Upptime's incident data, so the two figures can legitimately disagree: uptime is
   posts again. These issues carry a different label from Upptime's `status`
   incidents, so the uptime percentages and 90-day bars keep their single source.
 
+## Anything that pushes to `main` must share Upptime's concurrency group
+
+Upptime's generated workflows (Uptime CI, Response Time CI, Graphs CI,
+Summary CI) all run under the concurrency group
+`${{ github.repository }}-${{ github.head_ref || github.ref_name }}-upptime`
+with `cancel-in-progress: false`, so their commits to `main` are serialized.
+`upptime/uptime-monitor` pushes without rebasing and has no retry: if any other
+commit lands on `main` while a checker run is in flight, that run dies with
+`! [rejected] main -> main (fetch first)`.
+
+That is not a cosmetic failure. The checker commits `history/<slug>.yml` and
+closes the incident issue in the same run, so when the rejected push is the
+recovery run the history already says `status: up`, the next runs see the
+component up and skip the incident step, and the issue stays open until the
+next transition. Issue #13 (2026-09-12) stayed open 17 h 26 min that way for a
+~30-minute degradation, and because Upptime counts open-to-close as downtime it
+put the API at 27% uptime for the day.
+
+Rule: **every hand-maintained workflow that pushes to `main` uses the same
+group** (`traffic-health.yml` and `server-latency.yml` do), never with
+`cancel-in-progress: true` (a cancel would hit whichever checker run holds the
+group), and keeps the `git pull --rebase` retry loop as a second line of
+defence. `deploy-vercel.yml` does not push and keeps its own group.
+
+### Stale-incident reconciler
+
+`stale-incidents.yml` (hand-maintained) is the safety net for the case above. It
+runs on the same `traffic-health` dispatch the Vercel cron fires two minutes
+after the checker (GitHub's `*/15` schedule is the fallback) and, for every open
+`status`-labelled issue the checker authored, reads that component's
+`history/<slug>.yml` from `main`. If the file reads `status: up` and its
+`lastUpdated` is more than 10 minutes after the issue's `created_at`, the
+recovery run failed before closing the issue, so the reconciler closes it with a
+comment saying so. It runs with `github.token` (`permissions: issues: write`),
+so the comment is authored by `github-actions[bot]`. It ignores manual incidents
+(issues whose body is not Upptime's template), `maintenance` issues, and
+`traffic-alert` issues, which `traffic-health.yml` owns.
+
 ## Alerts
 
-Two independent alert paths, both to the same Slack incoming webhook:
+Three alert paths, all to the same Slack incoming webhook
+(`NOTIFICATION_SLACK_WEBHOOK_URL`, the `#experiential-platform` webhook):
 
 1. **Checker incidents** (Upptime): set both repository secrets together,
    `NOTIFICATION_SLACK=true` and `NOTIFICATION_SLACK_WEBHOOK_URL=<url>`. Both
@@ -109,6 +149,33 @@ Two independent alert paths, both to the same Slack incoming webhook:
    the owner (GitHub emails the assignee) whether or not Slack is configured.
 2. **Traffic alerts** (this repo's workflow): reads the same
    `NOTIFICATION_SLACK_WEBHOOK_URL`; with it unset, the GitHub issue is the alert.
+3. **Owner @mention on a public outage** (`slack-mention.yml`, hand-maintained):
+   Upptime's Slack posts cannot mention anyone, so this workflow listens to the
+   checker's incident issues (`status` plus `web`, `api`, or `docs`; the
+   `gateway` probe row and `traffic-alert` issues are ignored). When a
+   "`<name> is down`" issue is opened it posts `<@U0B6Y9K9C00>` (the owner's
+   Slack user id) followed by the outage, the status page, and the issue link;
+   a degraded incident posts without a mention; closing posts a recovery line
+   with the open-to-close duration. With the webhook secret unset it logs
+   "webhook not configured" and exits green. Test it without an incident from
+   the Actions tab (Run workflow, `dry_run` on prints the payload instead of
+   posting; off posts a clearly simulated message).
+
+Neither secret is set today, so the only alert has been the GitHub issue and
+its assignee email. To turn Slack on, set both:
+
+```bash
+gh secret set NOTIFICATION_SLACK_WEBHOOK_URL --repo experientiallabs/status --body 'https://hooks.slack.com/services/…'
+gh secret set NOTIFICATION_SLACK --repo experientiallabs/status --body 'true'
+```
+
+Authorship: Upptime opens incident issues, comments on them, and closes them
+with `GH_PAT`, so on GitHub every checker action appears to come from whoever
+owns that token (currently a personal token, so the incidents read as if the
+owner typed them). The fix is a dedicated bot account (a machine user with
+write access to this repo) whose fine-grained PAT replaces `GH_PAT`; the
+reconciler and the mention workflow already use `github.token` and do not have
+this problem.
 
 ### Why the checks are fired from Vercel, not GitHub's cron
 
@@ -195,8 +262,10 @@ service already recovered (a slow auto-close, or one left open by hand) is
 counted as continuous downtime — a brief blip whose issue lingered a day reads as
 ~1,440 minutes down and drags the weekly uptime figure down with it. Keep the
 uptime numbers honest by closing recovered incidents promptly: the checker
-auto-closes on the next passing run, but verify stale `status` issues after any
-monitoring hiccup rather than leaving them open.
+auto-closes on the next passing run and the stale-incident reconciler catches
+the case where that run failed, but verify stale `status` issues after any
+monitoring hiccup rather than leaving them open, and annul the ones that were
+artifacts (`annulledIssues` plus removing the `status` label).
 
 ## Hosting and deploys
 
@@ -241,7 +310,7 @@ The site is **built** on GitHub and **served** by Vercel:
 | `VERCEL_ORG_ID`                                        | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
 | `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
 | `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
-| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker and from traffic-health.                                                                                                                                    |
+| `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts). Not set as of 2026-09-13.                                                             |
 
 ## Versioning and upkeep
 

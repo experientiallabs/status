@@ -2,7 +2,7 @@
   "notes": "Curated incident record, UTC. This is the single source for the 90-day bars, the uptime percentage, and the Past Incidents section (assets/status-ui/uptime-bars.js). Each entry was reconstructed from the gateway ledger (gateway_requests per 10-minute bucket), production deploy runs, and the incident notes for that day; times are when the effect actually started and stopped, not when a monitoring issue was opened or closed. severity 'down' = requests were not being served (counts against uptime); 'degraded' = serving with elevated errors or latency (shown, not counted against uptime). Checker incidents opened as GitHub issues AFTER liveIssuesSince are merged in automatically; issue numbers in annulledIssues are monitoring artifacts and ignored.",
   "monitoringSince": "2026-08-25",
   "liveIssuesSince": "2026-09-07T00:00:00Z",
-  "annulledIssues": [4, 5],
+  "annulledIssues": [4, 5, 13],
   "incidents": [
     {
       "id": "2026-08-27-gateway-errors",
@@ -138,6 +138,42 @@
       "end": "2026-09-06T18:35:00Z",
       "title": "Edge returned 502 during a failed release",
       "description": "A production release (18:04–18:26 UTC) failed and its rollback left the public edge returning 502; requests were not accepted for ~15 minutes until the previous revision was restored at 18:35."
+    },
+    {
+      "id": "2026-09-11-nano-cutover",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-11T22:14:00Z",
+      "end": "2026-09-11T22:37:00Z",
+      "title": "Elevated errors after a database schema change landed before the fleet rolled",
+      "description": "A billing-unit schema migration applied to production at merge while the previous build was still serving; control-plane routes returned 500 and about 20% of gateway requests failed until the new build rolled."
+    },
+    {
+      "id": "2026-09-11-nano-cutover-roll",
+      "component": "api",
+      "severity": "down",
+      "start": "2026-09-11T22:37:00Z",
+      "end": "2026-09-11T22:55:00Z",
+      "title": "Gateway unavailable while the new build warmed its catalog",
+      "description": "The new build could not serve the stored catalog snapshot and returned 503 for about 16 minutes until the first publish completed; live traffic fell to zero requests in a 15-minute window."
+    },
+    {
+      "id": "2026-09-12-org-lock-queue",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-12T18:01:00Z",
+      "end": "2026-09-12T19:05:00Z",
+      "title": "Requests waited 1.5–2.5 minutes before admission",
+      "description": "One high-volume organization's per-request rate-window check scanned its whole day of usage under a row lock; queued reservations held every worker's admission permits, so all requests waited 90–145 s and some were refused with a location error after the edge location stamp expired. Fixed the same evening by moving the windows to maintained counters."
+    },
+    {
+      "id": "2026-09-13-budget-check-queue",
+      "component": "api",
+      "severity": "degraded",
+      "start": "2026-09-13T11:45:00Z",
+      "end": "2026-09-13T12:53:00Z",
+      "title": "Slow admission and intermittent timeouts",
+      "description": "A monthly budget check summed a whole month of usage under the same organization row lock; admission queued fleet-wide (checker saw 35–54 s and one timeout) until the budget row was removed, and the check was rewritten to read maintained rollups the same day."
     }
   ]
 }
