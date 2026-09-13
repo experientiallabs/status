@@ -36,8 +36,11 @@ on:
   workflow_dispatch:
 # Upptime's group: serializes this against the checker so the two never act
 # on the same incident at once. Never cancel-in-progress in this group.
+# Own group: this workflow only closes issues and never pushes to main, so it
+# must not compete with the checker's push group (a pending run there is
+# cancelled by the next arrival; two runs were cancelled that way on 2026-09-13).
 concurrency:
-  group: ${{ github.repository }}-${{ github.head_ref || github.ref_name }}-upptime
+  group: ${{ github.repository }}-stale-incidents
   cancel-in-progress: false
 permissions:
   contents: read
