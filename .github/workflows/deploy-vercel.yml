@@ -11,6 +11,14 @@ on:
   workflow_run:
     workflows: ["Static Site CI", "Setup CI"]
     types: [completed]
+  # Static Site CI only rebuilds on assets/** pushes, so a change under
+  # vercel/ (functions, vercel.json) never reached Vercel on its own: #21
+  # (the .mjs handler rename) sat unshipped until a manual dispatch. Deploy
+  # directly on those pushes.
+  push:
+    branches: [main]
+    paths:
+      - "vercel/**"
   workflow_dispatch:
 concurrency:
   group: ${{ github.repository }}-deploy-vercel
