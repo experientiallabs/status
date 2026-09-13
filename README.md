@@ -388,7 +388,7 @@ The site is **built** on GitHub and **served** by Vercel:
   via workflow_dispatch) and ships the `gh-pages` tree to the Vercel project
   `status` (team `experiential-labs`) with a pinned `vercel@59.5.0` CLI.
   `assets/status-ui/*` is overlaid at `/ui/` and the whole `vercel/` tree
-  (`vercel.json`, `api/cron/*`, `api/feed.js`, `api/notify.js`,
+  (`vercel.json`, `api/cron/*`, `api/feed.js`, `api/notify.mjs`,
   `api/slack/*`, shared code in `api/_lib/`) at the root; anything under
   `vercel/api/` becomes a serverless function, `_lib` is skipped by Vercel's
   underscore rule. Unit tests for that code: `node --test 'tests/*.test.mjs'`
