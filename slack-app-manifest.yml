@@ -1,0 +1,28 @@
+# Slack app manifest for the self-service "Add to Slack" subscription button
+# (README "Subscriptions"). Create the app at https://api.slack.com/apps ->
+# "Create New App" -> "From a manifest", paste this file. The app only needs
+# the incoming-webhook scope: each install hands us ONE webhook for ONE
+# channel, which /api/slack/callback stores in Vercel Edge Config.
+display_information:
+  name: Experiential Labs Status
+  description: Incident updates from status.experientiallabs.ai in a channel of your choice.
+  background_color: "#1f2937"
+  long_description: >-
+    Posts a message to the channel you pick when a public component of the
+    Experiential Labs platform (Web Dashboard, API, Docs) goes down, is
+    degraded, or recovers. Read-only: the app needs only the incoming-webhook
+    scope for the channel you choose at install time.
+features:
+  bot_user:
+    display_name: Experiential Labs Status
+    always_online: false
+oauth_config:
+  redirect_urls:
+    - https://status.experientiallabs.ai/api/slack/callback
+  scopes:
+    bot:
+      - incoming-webhook
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
