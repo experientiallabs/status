@@ -17,6 +17,13 @@
 //      carries the component, the UTC time window, the duration, and a short
 //      technical description. Upptime's own past-incidents section (which
 //      renders only dates that had incidents) is hidden when this one renders.
+//   3. A "Subscribe to updates" row above Past Incidents (Atom feed, Slack's
+//      built-in /feed command, the optional "Add to Slack" button when
+//      assets/status-ui/subscribe.json says slackAppEnabled, and the README
+//      for anything else) plus the <link rel="alternate"> feed discovery tag.
+//      The feed itself (assets/status-ui/feed.xml, built by feed.yml) is
+//      rendered from the SAME mergedIncidents function below: the builder
+//      loads the block between the @shared markers verbatim, so feed == page.
 //
 // Loaded from .upptimerc.yml's customHeadHtml; the Deploy-to-Vercel workflow
 // copies this file into the served tree at /ui/uptime-bars.js. No secrets, no
@@ -67,8 +74,31 @@
     section.ub-incidents article .ub-meta { color: #6b7280; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
     section.ub-incidents article .ub-desc { color: #374151; font-size: 0.85rem; margin: 0.35rem 0 0; line-height: 1.45; }
     section.ub-incidents article h4 { margin: 0 0 0.2rem 0; font-size: 0.95rem; }
+    section.ub-subscribe h2 { font-size: 1rem; font-weight: 600; margin-top: 2rem; }
+    section.ub-subscribe .ub-sub-row { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem;
+      margin-top: 0.6rem; font-size: 0.85rem; color: #374151; }
+    section.ub-subscribe .ub-sub-item { flex: 1 1 220px; min-width: 0; }
+    section.ub-subscribe .ub-sub-item b { display: block; color: #1f2937; font-weight: 600; margin-bottom: 0.15rem; }
+    section.ub-subscribe .ub-sub-item p { margin: 0; color: #6b7280; line-height: 1.45; }
+    section.ub-subscribe code { font-size: 0.8rem; background: #f3f4f6; border-radius: 3px; padding: 0.05rem 0.3rem;
+      overflow-wrap: anywhere; }
+    section.ub-subscribe a.ub-sub-btn { display: inline-block; margin-top: 0.4rem; padding: 0.3rem 0.7rem;
+      border: 1px solid #e5e7eb; border-radius: 4px; color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.8rem; }
+    section.ub-subscribe a.ub-sub-btn:hover { background: #f9fafb; }
   `;
   document.head.appendChild(style);
+
+  // Feed autodiscovery (browsers, feed readers, Slack's /feed command). The
+  // Upptime head is generated from .upptimerc.yml, so the tag is injected here.
+  const FEED_PATH = "/feed.xml";
+  if (!document.querySelector('link[rel="alternate"][type="application/atom+xml"]')) {
+    const alternate = document.createElement("link");
+    alternate.rel = "alternate";
+    alternate.type = "application/atom+xml";
+    alternate.title = "Experiential Labs Status";
+    alternate.href = FEED_PATH;
+    document.head.appendChild(alternate);
+  }
 
   const utcKey = (date) => date.toISOString().slice(0, 10);
   const daysAgo = (n) => {
@@ -108,6 +138,12 @@
     .then((res) => (res.ok ? res.json() : EMPTY_RECORD))
     .catch(() => EMPTY_RECORD);
 
+  // Subscription options flag (assets/status-ui/subscribe.json): the "Add to
+  // Slack" button renders only when the owner has enabled the Slack app.
+  const subscribePromise = fetch(`${RAW}/assets/status-ui/subscribe.json`)
+    .then((res) => (res.ok ? res.json() : {}))
+    .catch(() => ({}));
+
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
   // Minutes of [start, end) that fall on each UTC day, as { "YYYY-MM-DD": minutes }.
@@ -127,6 +163,8 @@
 
   // One list of { component, severity, start, end, title, description, href }
   // from the curated record plus the checker's live issues it does not annul.
+  // @shared-begin mergedIncidents — scripts/build-feed.mjs evaluates this exact
+  // block (no DOM, no closure state), so the Atom feed and the page cannot drift.
   function mergedIncidents(record, issues) {
     const list = (record.incidents || []).map((incident) => ({ ...incident, href: null }));
     const since = record.liveIssuesSince ? new Date(record.liveIssuesSince) : null;
@@ -154,6 +192,7 @@
       });
     return list;
   }
+  // @shared-end mergedIncidents
 
   const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway" };
   const hhmm = (iso) => new Date(iso).toISOString().slice(11, 16);
@@ -300,6 +339,52 @@
     });
   }
 
+  // "Subscribe to updates": the Atom feed, Slack's built-in RSS app (zero
+  // setup), the self-service "Add to Slack" button when the owner enabled the
+  // app, and the README for webhooks / the JSON record. Rendered once, above
+  // Past Incidents.
+  function renderSubscribe(subscribe) {
+    if (document.querySelector("section.ub-subscribe")) return;
+    const main = document.querySelector("main");
+    if (!main) return;
+    const feedUrl = `${location.origin}${FEED_PATH}`;
+    const section = document.createElement("section");
+    section.className = "ub-subscribe";
+    const title = document.createElement("h2");
+    title.textContent = "Subscribe to updates";
+    section.appendChild(title);
+    const row = document.createElement("div");
+    row.className = "ub-sub-row";
+
+    const feed = document.createElement("div");
+    feed.className = "ub-sub-item";
+    feed.innerHTML = `<b>RSS / Atom</b><p><a href="${FEED_PATH}">${feedUrl.replace(/^https?:\/\//, "")}</a><br>One entry per incident, updated when an incident opens, changes, or resolves.</p>`;
+    row.appendChild(feed);
+
+    const slack = document.createElement("div");
+    slack.className = "ub-sub-item";
+    slack.innerHTML = `<b>Slack</b><p>In any channel: <code>/feed subscribe ${feedUrl}</code></p>`;
+    if (subscribe && subscribe.slackAppEnabled) {
+      const button = document.createElement("a");
+      button.className = "ub-sub-btn";
+      button.href = "/api/slack/install";
+      button.textContent = "Add to Slack";
+      button.title = "Post incident updates to a channel of your choice";
+      slack.appendChild(button);
+    }
+    row.appendChild(slack);
+
+    const other = document.createElement("div");
+    other.className = "ub-sub-item";
+    other.innerHTML = `<b>Webhook / other</b><p>The <a href="https://github.com/${OWNER}/${REPO}#subscriptions">README</a> documents the feed and the JSON incident record behind this page.</p>`;
+    row.appendChild(other);
+
+    section.appendChild(row);
+    const incidents = document.querySelector("section.ub-incidents");
+    if (incidents) main.insertBefore(section, incidents);
+    else main.appendChild(section);
+  }
+
   function renderIncidents([record, issues]) {
     if (document.querySelector("section.ub-incidents")) return;
     const main = document.querySelector("main");
@@ -363,8 +448,7 @@
     if (!document.querySelector("section.live-status")) {
       // Not on the index route (component/incident pages): drop the injected
       // incidents section so it cannot linger under another route's content.
-      const orphan = document.querySelector("section.ub-incidents");
-      if (orphan) orphan.remove();
+      document.querySelectorAll("section.ub-incidents, section.ub-subscribe").forEach((orphan) => orphan.remove());
       return false;
     }
     if (!document.querySelector("section.live-status article")) return false;
@@ -373,6 +457,7 @@
       .then(renderBars)
       .catch(() => {});
     Promise.all([incidentsPromise, issuesPromise]).then(renderIncidents).catch(() => {});
+    subscribePromise.then(renderSubscribe).catch(() => {});
     return true;
   }
 

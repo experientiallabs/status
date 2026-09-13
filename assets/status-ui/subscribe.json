@@ -1,0 +1,4 @@
+{
+  "notes": "Subscription options rendered by assets/status-ui/uptime-bars.js. slackAppEnabled: set true once the Slack app (slack-app-manifest.yml) exists and the Vercel env SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, EDGE_CONFIG, VERCEL_TOKEN, VERCEL_ORG_ID and NOTIFY_TOKEN are set; the page then shows an Add to Slack button pointing at /api/slack/install. Fetched from raw main, so a change takes effect on the next page load.",
+  "slackAppEnabled": false
+}

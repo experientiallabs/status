@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>tag:status.experientiallabs.ai,2026:feed</id>
+  <title>Experiential Labs Status</title>
+  <subtitle>Incidents and degradations on the Experiential Labs platform, one entry per incident (UTC).</subtitle>
+  <link rel="self" type="application/atom+xml" href="https://status.experientiallabs.ai/feed.xml"/>
+  <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+  <updated>2026-09-13T12:53:00Z</updated>
+  <author><name>Experiential Labs</name><uri>https://status.experientiallabs.ai/</uri></author>
+  <generator uri="https://github.com/experientiallabs/status">feed.yml</generator>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-13-budget-check-queue</id>
+    <title>Degraded: API — Slow admission and intermittent timeouts</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-13T11:45:00Z</published>
+    <updated>2026-09-13T12:53:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-13 11:45–12:53 UTC · 1 h 8 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-13 11:45–12:53 UTC · 1 h 8 min&lt;/p&gt;&lt;p&gt;A monthly budget check summed a whole month of usage under the same organization row lock; admission queued fleet-wide (checker saw 35–54 s and one timeout) until the budget row was removed, and the check was rewritten to read maintained rollups the same day.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-12-org-lock-queue</id>
+    <title>Degraded: API — Requests waited 1.5–2.5 minutes before admission</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-12T18:01:00Z</published>
+    <updated>2026-09-12T19:05:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-12 18:01–19:05 UTC · 1 h 4 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-12 18:01–19:05 UTC · 1 h 4 min&lt;/p&gt;&lt;p&gt;One high-volume organization's per-request rate-window check scanned its whole day of usage under a row lock; queued reservations held every worker's admission permits, so all requests waited 90–145 s and some were refused with a location error after the edge location stamp expired. Fixed the same evening by moving the windows to maintained counters.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:issue-9</id>
+    <title>Degraded: API — API has degraded performance</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/incident/9"/>
+    <published>2026-09-12T09:16:23Z</published>
+    <updated>2026-09-12T09:40:16Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-12 09:16–09:40 UTC · 24 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-12 09:16–09:40 UTC · 24 min&lt;/p&gt;&lt;p&gt;Detected by the external checker; see the incident page for the check results.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/incident/9&quot;&gt;https://status.experientiallabs.ai/incident/9&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-11-nano-cutover-roll</id>
+    <title>Outage: API — Gateway unavailable while the new build warmed its catalog</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-11T22:37:00Z</published>
+    <updated>2026-09-11T22:55:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="down"/>
+    <summary>API · Outage · 2026-09-11 22:37–22:55 UTC · 18 min</summary>
+    <content type="html">&lt;p&gt;API · Outage · 2026-09-11 22:37–22:55 UTC · 18 min&lt;/p&gt;&lt;p&gt;The new build could not serve the stored catalog snapshot and returned 503 for about 16 minutes until the first publish completed; live traffic fell to zero requests in a 15-minute window.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-11-nano-cutover</id>
+    <title>Degraded: API — Elevated errors after a database schema change landed before the fleet rolled</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-11T22:14:00Z</published>
+    <updated>2026-09-11T22:37:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-11 22:14–22:37 UTC · 23 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-11 22:14–22:37 UTC · 23 min&lt;/p&gt;&lt;p&gt;A billing-unit schema migration applied to production at merge while the previous build was still serving; control-plane routes returned 500 and about 20% of gateway requests failed until the new build rolled.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-06-release-502</id>
+    <title>Outage: API — Edge returned 502 during a failed release</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-06T18:20:00Z</published>
+    <updated>2026-09-06T18:35:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="down"/>
+    <summary>API · Outage · 2026-09-06 18:20–18:35 UTC · 15 min</summary>
+    <content type="html">&lt;p&gt;API · Outage · 2026-09-06 18:20–18:35 UTC · 15 min&lt;/p&gt;&lt;p&gt;A production release (18:04–18:26 UTC) failed and its rollback left the public edge returning 502; requests were not accepted for ~15 minutes until the previous revision was restored at 18:35.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-06-dashboard-slow</id>
+    <title>Degraded: Web Dashboard — Slow signed-in pages</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-06T06:50:00Z</published>
+    <updated>2026-09-06T10:50:00Z</updated>
+    <category term="web" label="Web Dashboard"/>
+    <category term="degraded"/>
+    <summary>Web Dashboard · Degraded · 2026-09-06 06:50–10:50 UTC · 4 h 0 min</summary>
+    <content type="html">&lt;p&gt;Web Dashboard · Degraded · 2026-09-06 06:50–10:50 UTC · 4 h 0 min&lt;/p&gt;&lt;p&gt;Under a signup surge (about 3k per hour), signed-in pages took 3–5 s and intermittently timed out: the grants table lacked an organization index (43.7M rows scanned per read) and the model list made five sequential reads per page. Index built at 10:02 UTC; the list was folded into one read in the same fix.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-06-worker-oom-loop</id>
+    <title>Degraded: API — Gateway workers restarting on memory pressure</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-06T03:00:00Z</published>
+    <updated>2026-09-06T09:45:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-06 03:00–09:45 UTC · 6 h 45 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-06 03:00–09:45 UTC · 6 h 45 min&lt;/p&gt;&lt;p&gt;A post-rebuild comparison introduced the previous evening ran after every catalog rebuild while connection changes triggered rebuilds about once a minute, so worker memory ratcheted to its 4 GiB limit and pods restarted repeatedly. About 5% of requests ended incomplete. Mitigated at 09:36 UTC by switching to lean catalog variants; restarts stopped by 09:50.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-edge-unreachable</id>
+    <title>Degraded: API — Edge briefly unreachable from external monitoring</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T18:21:00Z</published>
+    <updated>2026-09-05T18:34:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-05 18:21–18:34 UTC · 13 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-05 18:21–18:34 UTC · 13 min&lt;/p&gt;&lt;p&gt;External checks timed out for ~13 minutes during a failed release roll (18:18–18:40 UTC); in-flight customer traffic in the ledger continued at normal volume.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-afternoon-gateway-errors</id>
+    <title>Degraded: API — Elevated internal errors</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T15:50:00Z</published>
+    <updated>2026-09-05T17:15:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-05 15:50–17:15 UTC · 1 h 25 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-05 15:50–17:15 UTC · 1 h 25 min&lt;/p&gt;&lt;p&gt;Roughly a third of requests failed inside the gateway as `internal` under a traffic peak (7–9k requests per 10 minutes); recovered after the 17:00 UTC release rolled.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-unmapped-sqlstate</id>
+    <title>Degraded: API — Free-tier limit checks surfaced as internal errors</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T05:20:00Z</published>
+    <updated>2026-09-05T06:20:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-05 05:20–06:20 UTC · 1 h 0 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-05 05:20–06:20 UTC · 1 h 0 min&lt;/p&gt;&lt;p&gt;A schema change landed before the gateway worker that understood it, so free-tier exhaustion rejections raised an unmapped database error code and were reported as `internal` (~170/min, 30–50% of requests). Cleared when the updated worker rolled at 06:31 UTC; paid traffic was unaffected.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-release-rollback</id>
+    <title>Outage: Web Dashboard — Dashboard down after a failed release rollback</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T04:57:00Z</published>
+    <updated>2026-09-05T05:30:00Z</updated>
+    <category term="web" label="Web Dashboard"/>
+    <category term="down"/>
+    <summary>Web Dashboard · Outage · 2026-09-05 04:57–05:30 UTC · 33 min</summary>
+    <content type="html">&lt;p&gt;Web Dashboard · Outage · 2026-09-05 04:57–05:30 UTC · 33 min&lt;/p&gt;&lt;p&gt;A production release failed at the gateway-worker step and its automatic rollback re-applied the web app with an empty environment group, so the dashboard returned errors. The environment was restored by hand at 05:30 UTC.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-postgres-restart-web</id>
+    <title>Outage: Web Dashboard — Database restart</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T03:51:00Z</published>
+    <updated>2026-09-05T03:59:00Z</updated>
+    <category term="web" label="Web Dashboard"/>
+    <category term="down"/>
+    <summary>Web Dashboard · Outage · 2026-09-05 03:51–03:59 UTC · 8 min</summary>
+    <content type="html">&lt;p&gt;Web Dashboard · Outage · 2026-09-05 03:51–03:59 UTC · 8 min&lt;/p&gt;&lt;p&gt;Signed-in dashboard pages could not load while production Postgres restarted (03:51–03:59 UTC).&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-05-postgres-restart</id>
+    <title>Outage: API — Database restart</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-05T03:51:00Z</published>
+    <updated>2026-09-05T03:59:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="down"/>
+    <summary>API · Outage · 2026-09-05 03:51–03:59 UTC · 8 min</summary>
+    <content type="html">&lt;p&gt;API · Outage · 2026-09-05 03:51–03:59 UTC · 8 min&lt;/p&gt;&lt;p&gt;Production Postgres shut down on an administrator command at 03:51 UTC and came back after crash recovery at 03:58:50. Gateway readiness gates on the database, so /v1 returned 503 and requests were not accepted for ~8 minutes.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-03-slow-relays</id>
+    <title>Degraded: API — Slow responses after catalog repoints</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-03T10:10:00Z</published>
+    <updated>2026-09-03T10:35:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-03 10:10–10:35 UTC · 25 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-03 10:10–10:35 UTC · 25 min&lt;/p&gt;&lt;p&gt;Further alias repoints (08:18–10:15 UTC) triggered the same inline rebuild; ~410 requests took 30 s or longer and surfaced as 503/504 before the fix landed.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-03-catalog-publish-wedge</id>
+    <title>Outage: API — Requests hung during a large catalog publish</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-03T08:52:00Z</published>
+    <updated>2026-09-03T09:02:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="down"/>
+    <summary>API · Outage · 2026-09-03 08:52–09:02 UTC · 10 min</summary>
+    <content type="html">&lt;p&gt;API · Outage · 2026-09-03 08:52–09:02 UTC · 10 min&lt;/p&gt;&lt;p&gt;A publish repointing 732 model aliases made every gateway pod rebuild its catalog inline on the request path; requests hung with no response for ~10 minutes (zero accepted requests at 08:53). Fix deployed 17:36 UTC: the request path now only hydrates an already-published snapshot.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-02-catalog-publish-storms-2</id>
+    <title>Degraded: API — Elevated errors during repeated catalog publishes (continued)</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-02T10:40:00Z</published>
+    <updated>2026-09-02T12:50:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-02 10:40–12:50 UTC · 2 h 10 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-02 10:40–12:50 UTC · 2 h 10 min&lt;/p&gt;&lt;p&gt;Second window of the same catalog-rebuild contention; 20–45% of requests failed as `unavailable` on affected pods.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-09-02-catalog-publish-storms</id>
+    <title>Degraded: API — Elevated errors during repeated catalog publishes</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-09-02T05:50:00Z</published>
+    <updated>2026-09-02T07:40:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-09-02 05:50–07:40 UTC · 1 h 50 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-09-02 05:50–07:40 UTC · 1 h 50 min&lt;/p&gt;&lt;p&gt;Back-to-back catalog publishes forced gateway workers to rebuild routing state on the request path; requests landing on a rebuilding pod failed as `unavailable` (20–35% of requests). Recurred 10:40–12:50 UTC. Root cause fixed the next day (request path no longer rebuilds the catalog).&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-08-31-catalog-reload-burst</id>
+    <title>Degraded: API — Gateway error burst during catalog reload</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-08-31T09:20:00Z</published>
+    <updated>2026-08-31T09:30:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-08-31 09:20–09:30 UTC · 10 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-08-31 09:20–09:30 UTC · 10 min&lt;/p&gt;&lt;p&gt;About 70% of requests in one 10-minute window failed as `unavailable` while gateway workers picked up a new catalog revision; recovered without intervention.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>tag:status.experientiallabs.ai,2026:2026-08-27-gateway-errors</id>
+    <title>Degraded: API — Elevated gateway errors</title>
+    <link rel="alternate" type="text/html" href="https://status.experientiallabs.ai/"/>
+    <published>2026-08-27T23:40:00Z</published>
+    <updated>2026-08-28T01:10:00Z</updated>
+    <category term="api" label="API"/>
+    <category term="degraded"/>
+    <summary>API · Degraded · 2026-08-27 23:40 – 2026-08-28 01:10 UTC · 1 h 30 min</summary>
+    <content type="html">&lt;p&gt;API · Degraded · 2026-08-27 23:40 – 2026-08-28 01:10 UTC · 1 h 30 min&lt;/p&gt;&lt;p&gt;Two bursts of gateway-owned `unavailable` errors (23:40–23:59 and 00:50–01:09 UTC), peaking at most requests in a 10-minute window; requests outside the bursts completed normally.&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://status.experientiallabs.ai/&quot;&gt;https://status.experientiallabs.ai/&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+</feed>
