@@ -115,7 +115,7 @@ checker's live `status` issues after `liveIssuesSince`, minus
   deletes the subscriber.
 - **Fan-out:** `POST /api/notify` (Bearer `NOTIFY_TOKEN`, body
   `{event: opened|closed, component, state: down|degraded, title, url,
-  duration}`) posts one message to the internal channel
+duration}`) posts one message to the internal channel
   (`NOTIFICATION_SLACK_WEBHOOK_URL`, with the owner mention on a down opening)
   and, without the mention, to every subscriber, best effort with a 5 s
   timeout per webhook. `?dry_run=1` returns the payloads and subscriber count
