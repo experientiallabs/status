@@ -10,11 +10,11 @@
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 434,
-    "timeDay": 377,
-    "timeWeek": 398,
-    "timeMonth": 434,
-    "timeYear": 434,
+    "time": 432,
+    "timeDay": 359,
+    "timeWeek": 403,
+    "timeMonth": 432,
+    "timeYear": 432,
     "dailyMinutesDown": {}
   },
   {
@@ -23,20 +23,19 @@
     "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
     "slug": "api",
     "status": "up",
-    "uptime": "99.71%",
-    "uptimeDay": "99.70%",
-    "uptimeWeek": "99.03%",
-    "uptimeMonth": "99.71%",
-    "uptimeYear": "99.71%",
-    "time": 5161,
-    "timeDay": 2941,
-    "timeWeek": 10159,
-    "timeMonth": 5161,
-    "timeYear": 5161,
+    "uptime": "99.73%",
+    "uptimeDay": "100.00%",
+    "uptimeWeek": "99.08%",
+    "uptimeMonth": "99.73%",
+    "uptimeYear": "99.73%",
+    "time": 5068,
+    "timeDay": 3005,
+    "timeWeek": 10167,
+    "timeMonth": 5068,
+    "timeYear": 5068,
     "dailyMinutesDown": {
       "2026-09-12": 24,
-      "2026-09-14": 69,
-      "2026-09-18": 4
+      "2026-09-14": 69
     }
   },
   {
@@ -50,11 +49,11 @@
     "uptimeWeek": "100.00%",
     "uptimeMonth": "100.00%",
     "uptimeYear": "100.00%",
-    "time": 340,
-    "timeDay": 232,
-    "timeWeek": 284,
-    "timeMonth": 340,
-    "timeYear": 340,
+    "time": 342,
+    "timeDay": 397,
+    "timeWeek": 310,
+    "timeMonth": 342,
+    "timeYear": 342,
     "dailyMinutesDown": {}
   }
 ]
