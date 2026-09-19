@@ -1,7 +1,7 @@
 url: https://api.experientiallabs.ai/v1/models
-status: degraded
+status: up
 code: 401
-responseTime: 42091
-lastUpdated: 2026-09-19T21:12:03.712Z
+responseTime: 1419
+lastUpdated: 2026-09-19T21:15:41.672Z
 startTime: 2026-08-25T18:38:49.556Z
 generator: Upptime <https://github.com/upptime/upptime>
