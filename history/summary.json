@@ -22,21 +22,21 @@
     "url": "https://api.experientiallabs.ai/v1/models",
     "icon": "https://icons.duckduckgo.com/ip3/api.experientiallabs.ai.ico",
     "slug": "api",
-    "status": "degraded",
-    "uptime": "99.67%",
-    "uptimeDay": "98.28%",
-    "uptimeWeek": "99.07%",
-    "uptimeMonth": "99.67%",
-    "uptimeYear": "99.67%",
-    "time": 6559,
-    "timeDay": 15474,
-    "timeWeek": 12738,
-    "timeMonth": 6559,
-    "timeYear": 6559,
+    "status": "up",
+    "uptime": "99.64%",
+    "uptimeDay": "97.44%",
+    "uptimeWeek": "98.95%",
+    "uptimeMonth": "99.64%",
+    "uptimeYear": "99.64%",
+    "time": 6455,
+    "timeDay": 13787,
+    "timeWeek": 12219,
+    "timeMonth": 6455,
+    "timeYear": 6455,
     "dailyMinutesDown": {
       "2026-09-12": 24,
       "2026-09-14": 69,
-      "2026-09-19": 25
+      "2026-09-19": 37
     }
   },
   {
