@@ -27,7 +27,10 @@ jobs:
   deploy:
     name: Deploy gh-pages to Vercel
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # The push trigger (vercel/** changes, #22) never actually deployed: this
+    # condition only admitted workflow_dispatch and a successful workflow_run,
+    # so every push-triggered run was skipped (seen 2026-09-23, 8243b748).
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
     steps:
