@@ -17,6 +17,13 @@
 //      carries the component, the UTC time window, the duration, and a short
 //      technical description. Upptime's own past-incidents section (which
 //      renders only dates that had incidents) is hidden when this one renders.
+//   4. A "Dashboard (signed in)" row under the Web Dashboard row, from
+//      assets/status-ui/signed-in-health.json (the signed-in-health workflow:
+//      a monitor account renders /overview through the public hostname every
+//      5 minutes, including the session-refresh path). The checker has no
+//      session, so the 2026-09-22 signed-in-only 502s never reached this page.
+//      The row's 90-day bars come from the same merged incident record, keyed
+//      on component `dashboard` (the workflow's `status` + `dashboard` issues).
 //   3. A "Subscribe to updates" row above Past Incidents (Atom feed, Slack's
 //      built-in /feed command, the optional "Add to Slack" button when
 //      assets/status-ui/subscribe.json says slackAppEnabled, and the README
@@ -66,6 +73,12 @@
     main > article.ub-down { background: #e74c3c !important; }
     main > article.ub-degraded::before { content: "Degraded Performance: live API traffic is failing" !important; color: #1f2937 !important; }
     main > article.ub-down::before { content: "Partial Outage: live API traffic is failing" !important; }
+    /* Signed-in dashboard state, same precedence idea; declared after the
+       traffic rules so a dashboard outage wins the banner text when both fire. */
+    main > article.ub-dash-degraded { background: #f1c40f !important; }
+    main > article.ub-dash-down { background: #e74c3c !important; }
+    main > article.ub-dash-degraded::before { content: "Degraded Performance: the signed-in dashboard is failing intermittently" !important; color: #1f2937 !important; }
+    main > article.ub-dash-down::before { content: "Partial Outage: the signed-in dashboard is not rendering" !important; }
     section.ub-incidents h2 { font-size: 1rem; font-weight: 600; margin-top: 2rem; }
     section.ub-incidents h3 { font-size: 0.9rem; font-weight: 600; color: #1f2937;
       border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-top: 1.4rem; }
@@ -126,6 +139,12 @@
   // refreshed every 5 minutes by the traffic-health workflow. Rendered on the
   // API row next to the synthetic check so a reader sees what customers see.
   const trafficPromise = fetch(`${RAW}/assets/status-ui/traffic-health.json`)
+    .then((res) => (res.ok ? res.json() : null))
+    .catch(() => null);
+  // Signed-in dashboard check (a monitor account renders /overview through the
+  // public hostname, including the session-refresh path), refreshed every 5
+  // minutes by the signed-in-health workflow. Rendered as its own row.
+  const signedInPromise = fetch(`${RAW}/assets/status-ui/signed-in-health.json`)
     .then((res) => (res.ok ? res.json() : null))
     .catch(() => null);
   const issuesPromise = fetch(
@@ -194,7 +213,7 @@
   }
   // @shared-end mergedIncidents
 
-  const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway" };
+  const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway", dashboard: "Dashboard (signed in)" };
   const hhmm = (iso) => new Date(iso).toISOString().slice(11, 16);
 
   function buildStrip(slug, record, incidents) {
@@ -290,7 +309,94 @@
     }
   }
 
-  function renderBars([sites, latency, traffic, record, issues]) {
+  // The signed-in dashboard row. Upptime renders one article per configured
+  // site; this check is not a site (it needs a session, which the checker
+  // cannot hold), so its row is built here in the same shape as the generated
+  // ones: the sibling row's classes (the generator's scoped class carries the
+  // card layout and the pill positioning), an h4 title, a metrics line, and
+  // the 90-day strip keyed on component `dashboard`. The pill is the config
+  // sheet's own up/down/degraded ::after rule. A record older than STALE_MS
+  // (the workflow stopped running) says "check overdue" and claims nothing.
+  const DASHBOARD_SLUG = "dashboard";
+  const DASHBOARD_ISSUES = `https://github.com/${OWNER}/${REPO}/issues?q=label%3A${DASHBOARD_SLUG}`;
+  const SIGNED_IN_STALE_MS = 30 * 60 * 1000;
+  const SIGNED_IN_SCOPE =
+    "A dedicated monitor account signs in and loads the signed-in landing page through the public " +
+    "hostname, then repeats with an expired token so the session refresh writes its chunked cookies. " +
+    "Down means the page did not render on two attempts; degraded means one attempt failed or the render was slow.";
+
+  function signedInState(signedIn) {
+    if (!signedIn || !signedIn.generatedAt) return "unknown";
+    if (Date.now() - new Date(signedIn.generatedAt) > SIGNED_IN_STALE_MS) return "stale";
+    return ["ok", "degraded", "down"].includes(signedIn.verdict) ? signedIn.verdict : "unknown";
+  }
+
+  function signedInMetric(signedIn, state) {
+    const figures = (signedIn && signedIn.figures) || {};
+    const metric = document.createElement("div");
+    metric.className = "ub-metric";
+    const checked = signedIn && signedIn.generatedAt ? `checked ${hhmm(signedIn.generatedAt)} UTC` : "no check recorded";
+    if (state === "unknown" || state === "stale" || typeof figures.pageMs !== "number") {
+      const text = state === "stale" ? "check overdue" : "check unavailable";
+      metric.innerHTML = `Signed-in page: <span class="ub-metric-value">${text}</span> <span class="ub-metric-note">(${checked})</span>`;
+    } else {
+      const reason = signedIn.reason || "";
+      const value =
+        state === "ok" ? `rendered in ${Math.round(figures.pageMs)} ms`
+        : state === "down" ? "Down: not rendering"
+        : /slow/i.test(reason) ? "Degraded: slow render"
+        : /refresh/i.test(reason) ? "Degraded: session refresh unverified"
+        : "Degraded: intermittent errors";
+      const chunks = typeof figures.refreshSetCookieChunks === "number" ? `, ${figures.refreshSetCookieChunks} cookie chunks` : "";
+      const refresh = typeof figures.refreshMs === "number" ? `session refresh ${Math.round(figures.refreshMs)} ms${chunks}, ` : "";
+      metric.innerHTML = `Signed-in page: <span class="ub-metric-value${state === "ok" ? "" : ` ub-metric-${state}`}">${value}</span> <span class="ub-metric-note">(${refresh}${checked})</span>`;
+    }
+    metric.title = signedIn && signedIn.reason ? `${signedIn.reason} ${SIGNED_IN_SCOPE}` : SIGNED_IN_SCOPE;
+    return metric;
+  }
+
+  function renderSignedInRow(signedIn, record, incidents) {
+    const rows = [...document.querySelectorAll("section.live-status article")];
+    const webRow = rows.find((row) => {
+      const link = row.querySelector("h4 a[href*='/history/']");
+      return link && link.getAttribute("href").endsWith("/history/web");
+    });
+    if (!webRow) return;
+    const state = signedInState(signedIn);
+    let row = document.querySelector("section.live-status article.ub-synthetic");
+    if (!row) {
+      row = document.createElement("article");
+      row.dataset.ubSlug = DASHBOARD_SLUG;
+      const title = document.createElement("h4");
+      const link = document.createElement("a");
+      link.href = DASHBOARD_ISSUES;
+      const webLink = webRow.querySelector("h4 a");
+      if (webLink && webLink.className) link.className = webLink.className;
+      link.textContent = COMPONENT_LABELS[DASHBOARD_SLUG];
+      link.title = "Incident history for this check";
+      title.appendChild(link);
+      row.appendChild(title);
+      const metrics = document.createElement("div");
+      metrics.className = "ub-metrics";
+      metrics.appendChild(signedInMetric(signedIn, state));
+      row.appendChild(metrics);
+      row.appendChild(buildStrip(DASHBOARD_SLUG, record, incidents));
+      webRow.insertAdjacentElement("afterend", row);
+    }
+    // Reapplied on every pass (idempotent): the state classes drive the pill.
+    const base = webRow.className
+      .split(/\s+/)
+      .filter((cls) => cls && !["up", "down", "degraded"].includes(cls) && !cls.startsWith("ub-"));
+    const pill = state === "down" ? "down" : state === "degraded" ? "degraded" : "up";
+    row.className = [...base, "ub-synthetic", pill].join(" ");
+    const banner = document.querySelector("main > article");
+    if (banner) {
+      banner.classList.remove("ub-dash-down", "ub-dash-degraded");
+      if (state === "down" || state === "degraded") banner.classList.add(`ub-dash-${state}`);
+    }
+  }
+
+  function renderBars([sites, latency, traffic, record, issues, signedIn]) {
     const incidents = mergedIncidents(record, issues);
     const latencyComponents = (latency && latency.components) || {};
     document.querySelectorAll("section.live-status article").forEach((row) => {
@@ -324,6 +430,7 @@
       return link && link.getAttribute("href").endsWith("/history/api");
     });
     reflectTrafficState(apiRow || null, traffic);
+    renderSignedInRow(signedIn, record, incidents);
   }
 
   // Upptime's own past-incidents list renders only dates that had incidents;
@@ -453,7 +560,7 @@
     }
     if (!document.querySelector("section.live-status article")) return false;
     hideNativeIncidents();
-    Promise.all([summaryPromise, latencyPromise, trafficPromise, incidentsPromise, issuesPromise])
+    Promise.all([summaryPromise, latencyPromise, trafficPromise, incidentsPromise, issuesPromise, signedInPromise])
       .then(renderBars)
       .catch(() => {});
     Promise.all([incidentsPromise, issuesPromise]).then(renderIncidents).catch(() => {});
