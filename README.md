@@ -18,6 +18,7 @@ down, this page stays up and says so.
 | Docs                    | `GET platform.experientiallabs.ai/docs`                                 | 200                                                                                                     |
 | Gateway (authenticated) | `GET api.experientiallabs.ai/v1/models` with the status-monitor org key | 200; proves key auth, the gateway's Postgres path, and the catalog serve a signed-in caller             |
 | API, live traffic       | Gateway ledger, last 15 minutes of real customer requests               | Rendered on the API row; gateway-owned error rate and volume vs baseline (below)                        |
+| Dashboard (signed in)   | `GET platform.experientiallabs.ai/overview` with a monitor account's session cookies, then again with an expired token (session refresh) | 200 with the page's render marker on both; a 5xx, a redirect to /signin, the error boundary, or a timeout is down (below) |
 | Gateway Completions     | `POST /v1/chat/completions`, a real 1-token completion                  | 200; disabled until the status-monitor org is funded (below)                                            |
 
 All checks live in [`.upptimerc.yml`](./.upptimerc.yml). That file is the single
@@ -203,6 +204,63 @@ Upptime's incident data, so the two figures can legitimately disagree: uptime is
   posts again. These issues carry a different label from Upptime's `status`
   incidents, so the uptime percentages and 90-day bars keep their single source.
 
+## Signed-in dashboard health
+
+Every row above is signed out, so an outage that hits only signed-in pages is
+invisible to them: on 2026-09-22 22:55-23:20Z every signed-in page of
+platform.experientiallabs.ai intermittently 502'd (an nginx TLS sidecar in the
+web pods rejected Next.js responses whose Set-Cookie carried the chunked
+Supabase session cookies) while /signin, the 401 API check, and the
+authenticated /v1/models call stayed green. `signed-in-health.yml`
+(hand-maintained, every 5 minutes) runs `scripts/signed-in-probe.mjs`, which
+does what a browser does with a dedicated monitor account:
+
+1. Signs in with the GoTrue password grant (`STATUS_SUPABASE_URL`,
+   `STATUS_SUPABASE_ANON_KEY`, `STATUS_MONITOR_EMAIL`, `STATUS_MONITOR_PASSWORD`),
+   the same token endpoint the platform's sign-in route calls.
+2. Encodes the session exactly as `@supabase/ssr` 0.10 does (cookie
+   `sb-<project-ref>-auth-token`, value `base64-` + base64url JSON, split into
+   `.0`, `.1`, ... chunks of 3180 characters) and loads `/overview` through the
+   public hostname, so the request crosses the same edge, ingress, TLS sidecar,
+   and Next.js proxy as a user's. It must answer 200 and carry the page's render
+   marker; a redirect (the proxy's bounce to /signin), a 5xx, the app's error
+   boundary text, or a timeout fails.
+3. Repeats with the same tokens and `expires_at` in the past. The proxy then
+   refreshes the session and writes the chunked `Set-Cookie` headers on the
+   response, the exact shape the sidecar rejected. (The monitor account's user
+   metadata is padded so its session always spans several chunks, like a real
+   OAuth session.)
+4. Signs the monitor out.
+
+A failed attempt is retried once after 10 seconds with a fresh sign-in. Two
+failures are **down**; a failure followed by a pass is **degraded** (that
+intermittent pattern is the incident above); a pass slower than 10 seconds is
+degraded too. If the auth service refuses the sign-in with a 4xx the verdict is
+**unknown** (a rotated password or key, not an outage): nothing is opened, the
+run fails red so the owner sees it, and the row reads "check unavailable". A
+5xx or unreachable auth service is down, because users cannot sign in either.
+
+The result lands in `assets/status-ui/signed-in-health.json` and renders as
+the **Dashboard (signed in)** row under Web Dashboard (built by the status-ui
+overlay, not by Upptime, since the checker cannot hold a session): the pill,
+"Signed-in page: rendered in N ms (session refresh N ms, N cookie chunks,
+checked HH:MM UTC)", and 90-day bars keyed on component `dashboard`. A record
+older than 30 minutes reads "check overdue". A non-ok verdict opens one issue
+labelled `status` + `dashboard` with Upptime's title shape ("🟥 Dashboard
+(signed in) is down" / "⚠️ Dashboard (signed in) has degraded performance"), so
+Past Incidents, the row's bars, the Atom feed, and `slack-mention.yml` (owner
+@mention on down, recovery line on close) all pick it up; recovery closes it.
+The issue is opened with `GH_PAT` on purpose: issues created with
+`github.token` do not fire the `issues` event the mention workflow listens to.
+
+The monitor account is `status-dashboard-monitor@experientiallabs.ai` (Supabase
+auth user, personal org `status-dashboard-monitor`, never funded, never given a
+gateway key). Its password lives only in the repository secret and the owner's
+`~/.gateway-secrets/status-monitor-dashboard.env`. Rotate it with the Supabase
+dashboard (Authentication, Users, reset password), then
+`gh secret set STATUS_MONITOR_PASSWORD`. Run the probe locally with the same
+four variables: `node scripts/signed-in-probe.mjs --out /tmp/signed-in.json`.
+
 ## Anything that pushes to `main` must share Upptime's concurrency group
 
 Upptime's generated workflows (Uptime CI, Response Time CI, Graphs CI,
@@ -222,7 +280,8 @@ next transition. Issue #13 (2026-09-12) stayed open 17 h 26 min that way for a
 put the API at 27% uptime for the day.
 
 Rule: **every hand-maintained workflow that pushes to `main` uses the same
-group** (`traffic-health.yml`, `server-latency.yml` and `feed.yml` do), never with
+group** (`traffic-health.yml`, `signed-in-health.yml`, `server-latency.yml` and
+`feed.yml` do), never with
 `cancel-in-progress: true` (a cancel would hit whichever checker run holds the
 group), and keeps the `git pull --rebase` retry loop as a second line of
 defence. `deploy-vercel.yml` does not push and keeps its own group.
@@ -238,8 +297,9 @@ after the checker (GitHub's `*/15` schedule is the fallback) and, for every open
 recovery run failed before closing the issue, so the reconciler closes it with a
 comment saying so. It runs with `github.token` (`permissions: issues: write`),
 so the comment is authored by `github-actions[bot]`. It ignores manual incidents
-(issues whose body is not Upptime's template), `maintenance` issues, and
-`traffic-alert` issues, which `traffic-health.yml` owns.
+(issues whose body is not Upptime's template), `maintenance` issues,
+`traffic-alert` issues, which `traffic-health.yml` owns, and `dashboard` issues,
+which `signed-in-health.yml` owns and closes itself.
 
 ## Alerts
 
@@ -255,8 +315,9 @@ Three alert paths, all to the same Slack incoming webhook
    `NOTIFICATION_SLACK_WEBHOOK_URL`; with it unset, the GitHub issue is the alert.
 3. **Owner @mention on a public outage** (`slack-mention.yml`, hand-maintained):
    Upptime's Slack posts cannot mention anyone, so this workflow listens to the
-   checker's incident issues (`status` plus `web`, `api`, or `docs`; the
-   `gateway` probe row and `traffic-alert` issues are ignored). When a
+   checker's incident issues (`status` plus `web`, `api`, `docs`, or the
+   signed-in check's `dashboard`; the `gateway` probe row and `traffic-alert`
+   issues are ignored). When a
    "`<name> is down`" issue is opened it posts `<@U0B6Y9K9C00>` (the owner's
    Slack user id) followed by the outage, the status page, and the issue link;
    a degraded incident posts without a mention; closing posts a recovery line
@@ -290,10 +351,11 @@ GitHub runs a scheduled workflow only when it has capacity. On this repo the
 checker's `*/5` cron landed about once every two hours (measured 2026-09-04/05),
 which would let an eight-minute API outage pass unseen. So the schedule is a
 fallback only: a Vercel Cron (`vercel/vercel.json`, every 5 minutes, Pro plan)
-calls `/api/cron/uptime` on :00/:05/... and `/api/cron/traffic` two minutes
-later (`vercel/api/cron/*.js`, copied into the served root by
-`deploy-vercel.yml`); each sends one `repository_dispatch` event, `uptime` or
-`traffic-health`. The offset matters: both workflows commit to main and
+calls `/api/cron/uptime` on :00/:05/..., `/api/cron/traffic` two minutes
+later, and `/api/cron/signed-in` three minutes later (`vercel/api/cron/*.js`,
+copied into the served root by `deploy-vercel.yml`); each sends one
+`repository_dispatch` event, `uptime`, `traffic-health`, or `signed-in-health`.
+The offset matters: all three workflows commit to main and
 Upptime's checker pushes without rebasing, so firing them together made the
 checker lose the push race. Vercel project env (production):
 `CRON_SECRET` (Vercel presents it as the bearer token; anything else is 401) and
@@ -422,6 +484,8 @@ The site is **built** on GitHub and **served** by Vercel:
 | `VERCEL_ORG_ID`                                        | Team id written into `.vercel/project.json` at deploy time.                                                                                                                                                       |
 | `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
 | `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
+| `STATUS_MONITOR_EMAIL`, `STATUS_MONITOR_PASSWORD`      | The signed-in dashboard monitor account (see "Signed-in dashboard health").                                                                                                                                       |
+| `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_ANON_KEY`      | The production Supabase project URL and anon (publishable) key the probe signs in against; the anon key is the same public value the platform ships to browsers.                                                 |
 | `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts).                                                                                         |
 | `NOTIFY_TOKEN`                                         | Optional: shared secret for `POST /api/notify`; the same value goes in the Vercel env (see Subscriptions). Unset = the mention workflow posts the internal webhook directly.                                      |
 

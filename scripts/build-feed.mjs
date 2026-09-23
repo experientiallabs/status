@@ -25,7 +25,7 @@ export const FEED_URL = `${SITE}/feed.xml`;
 export const FEED_TITLE = "Experiential Labs Status";
 const TAG_AUTHORITY = "tag:status.experientiallabs.ai,2026:";
 const MAX_ENTRIES = 100;
-const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway" };
+const COMPONENT_LABELS = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway", dashboard: "Dashboard (signed in)" };
 
 // Pulls mergedIncidents out of the browser script. The block uses only Date,
 // Set, Array and the record/issues arguments (no DOM), so it evaluates as-is.

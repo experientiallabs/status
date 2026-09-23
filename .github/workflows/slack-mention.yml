@@ -6,9 +6,10 @@
 #   opened/reopened, title "⚠️ <name> has degraded ..."   -> internal channel, no mention
 #   closed                                                -> recovery line with the duration
 #
-# Only the three public rows (labels web, api, docs) qualify; `gateway` (the
-# authenticated probe) and `traffic-alert` issues (traffic-health.yml posts
-# its own) are ignored. The wording lives in ONE place,
+# The three public rows (labels web, api, docs) and the signed-in dashboard
+# check (label dashboard, opened by signed-in-health.yml with the same title
+# shape) qualify; `gateway` (the authenticated probe) and `traffic-alert`
+# issues (traffic-health.yml posts its own) are ignored. The wording lives in ONE place,
 # vercel/api/_lib/message.mjs, used by both delivery paths:
 #
 #   1. NOTIFY_TOKEN set (repo secret): POST the event to
@@ -35,7 +36,7 @@ on:
       component:
         description: "Component to simulate"
         type: choice
-        options: [api, web, docs]
+        options: [api, web, docs, dashboard]
         default: api
       state:
         description: "Incident state to simulate"
@@ -65,7 +66,8 @@ jobs:
         (
           contains(github.event.issue.labels.*.name, 'web') ||
           contains(github.event.issue.labels.*.name, 'api') ||
-          contains(github.event.issue.labels.*.name, 'docs')
+          contains(github.event.issue.labels.*.name, 'docs') ||
+          contains(github.event.issue.labels.*.name, 'dashboard')
         )
       )
     steps:
@@ -118,7 +120,7 @@ jobs:
               process.exit(0);
             }
             const labels = (env.ISSUE_LABELS || "").split(",");
-            const component = ["web", "api", "docs"].find((c) => labels.includes(c)) || "api";
+            const component = ["web", "api", "docs", "dashboard"].find((c) => labels.includes(c)) || "api";
             const action = env.ISSUE_ACTION === "reopened" ? "opened" : env.ISSUE_ACTION;
             event = {
               event: action,

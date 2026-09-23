@@ -5,7 +5,7 @@
 
 export const STATUS_URL = "https://status.experientiallabs.ai";
 export const OWNER_SLACK_ID = "U0B6Y9K9C00";
-const NAMES = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway" };
+const NAMES = { api: "API", web: "Web Dashboard", docs: "Docs", gateway: "Gateway", dashboard: "Dashboard (signed in)" };
 
 export function componentName(component) {
   return NAMES[component] || component || "component";

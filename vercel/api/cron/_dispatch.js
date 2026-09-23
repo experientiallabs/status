@@ -1,4 +1,4 @@
-// Shared by the two Vercel Cron functions in this directory (the underscore
+// Shared by the three Vercel Cron functions in this directory (the underscore
 // keeps this file from being deployed as a function itself).
 //
 // Why Vercel Cron at all: GitHub Actions runs a "*/5" cron only when it has
@@ -7,10 +7,11 @@
 // (Pro plan, per-minute resolution) calls these functions, which trigger the
 // GitHub workflows listening for repository_dispatch.
 //
-// Why two functions on offset schedules: the checker and the traffic read both
-// commit to main, and Upptime's checker pushes without rebasing, so firing them
-// in the same second made the checker lose the race and fail. uptime runs on
-// :00/:05/..., traffic-health two minutes later.
+// Why separate functions on offset schedules: the checker, the traffic read,
+// and the signed-in check all commit to main, and Upptime's checker pushes
+// without rebasing, so firing them in the same second made the checker lose
+// the race and fail. uptime runs on :00/:05/..., traffic-health two minutes
+// later, signed-in-health three minutes later.
 //
 // Env (Vercel project, production): CRON_SECRET (Vercel sends it as the bearer
 // token on cron invocations; anything else is refused) and GH_DISPATCH_TOKEN (a
