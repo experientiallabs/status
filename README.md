@@ -11,15 +11,15 @@ down, this page stays up and says so.
 
 ## What is monitored
 
-| Component               | Check                                                                   | Healthy when                                                                                            |
-| ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Web Dashboard           | `GET platform.experientiallabs.ai/signin` (light, always-public)        | 200                                                                                                     |
-| API                     | `GET api.experientiallabs.ai/v1/models`, unauthenticated                | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down |
-| Docs                    | `GET platform.experientiallabs.ai/docs`                                 | 200                                                                                                     |
-| Gateway (authenticated) | `GET api.experientiallabs.ai/v1/models` with the status-monitor org key | 200; proves key auth, the gateway's Postgres path, and the catalog serve a signed-in caller             |
-| API, live traffic       | Gateway ledger, last 15 minutes of real customer requests               | Rendered on the API row; gateway-owned error rate and volume vs baseline (below)                        |
+| Component               | Check                                                                                                                                    | Healthy when                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Web Dashboard           | `GET platform.experientiallabs.ai/signin` (light, always-public)                                                                         | 200                                                                                                                       |
+| API                     | `GET api.experientiallabs.ai/v1/models`, unauthenticated                                                                                 | **401**; the app rejecting the request proves edge + gateway worker + auth are alive, and a 5xx is down                   |
+| Docs                    | `GET platform.experientiallabs.ai/docs`                                                                                                  | 200                                                                                                                       |
+| Gateway (authenticated) | `GET api.experientiallabs.ai/v1/models` with the status-monitor org key                                                                  | 200; proves key auth, the gateway's Postgres path, and the catalog serve a signed-in caller                               |
+| API, live traffic       | Gateway ledger, last 15 minutes of real customer requests                                                                                | Rendered on the API row; gateway-owned error rate and volume vs baseline (below)                                          |
 | Dashboard (signed in)   | `GET platform.experientiallabs.ai/overview` with a monitor account's session cookies, then again with an expired token (session refresh) | 200 with the page's render marker on both; a 5xx, a redirect to /signin, the error boundary, or a timeout is down (below) |
-| Gateway Completions     | `POST /v1/chat/completions`, a real 1-token completion                  | 200; disabled until the status-monitor org is funded (below)                                            |
+| Gateway Completions     | `POST /v1/chat/completions`, a real 1-token completion                                                                                   | 200; disabled until the status-monitor org is funded (below)                                                              |
 
 All checks live in [`.upptimerc.yml`](./.upptimerc.yml). That file is the single
 source of truth: the workflows in `.github/workflows` are generated from it by
@@ -485,7 +485,7 @@ The site is **built** on GitHub and **served** by Vercel:
 | `PROD_OPS_AGENT_DB_URL`                                | Read-only, connection-capped prod role for the server-latency and traffic-health workflows.                                                                                                                       |
 | `STATUS_GATEWAY_API_KEY`                               | The status-monitor org's key behind the authenticated gateway probe.                                                                                                                                              |
 | `STATUS_MONITOR_EMAIL`, `STATUS_MONITOR_PASSWORD`      | The signed-in dashboard monitor account (see "Signed-in dashboard health").                                                                                                                                       |
-| `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_ANON_KEY`      | The production Supabase project URL and anon (publishable) key the probe signs in against; the anon key is the same public value the platform ships to browsers.                                                 |
+| `STATUS_SUPABASE_URL`, `STATUS_SUPABASE_ANON_KEY`      | The production Supabase project URL and anon (publishable) key the probe signs in against; the anon key is the same public value the platform ships to browsers.                                                  |
 | `NOTIFICATION_SLACK`, `NOTIFICATION_SLACK_WEBHOOK_URL` | Optional, set together: Slack alerts from the checker, from traffic-health, and the owner @mention workflow (see Alerts).                                                                                         |
 | `NOTIFY_TOKEN`                                         | Optional: shared secret for `POST /api/notify`; the same value goes in the Vercel env (see Subscriptions). Unset = the mention workflow posts the internal webhook directly.                                      |
 
