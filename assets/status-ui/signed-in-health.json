@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-09-26T09:48:37Z",
+  "generatedAt": "2026-09-26T09:53:38Z",
   "target": "https://platform.experientiallabs.ai/overview",
   "notes": "Synthetic signed-in check: a dedicated monitor account signs in with the password grant, presents the session exactly as the browser cookies do (@supabase/ssr chunked base64url cookies), and loads the signed-in landing page through the public hostname; then repeats with an expired access token so the proxy refreshes the session and writes the chunked Set-Cookie response (the 2026-09-22 failure shape). Refreshed every 5 minutes by the signed-in-health workflow. down = the page did not render on two attempts (5xx, redirect, error boundary, timeout) or sign-in itself failed server-side; degraded = one attempt failed or the render was slow; unknown = the monitor could not sign in for a client-side reason (misconfiguration), which never alerts.",
   "verdict": "ok",
   "reason": "",
   "attempts": 1,
   "figures": {
-    "signInMs": 439,
+    "signInMs": 351,
     "pageStatus": 200,
-    "pageMs": 1455,
+    "pageMs": 1425,
     "pageBytes": 105963,
     "refreshStatus": 200,
-    "refreshMs": 1433,
+    "refreshMs": 2348,
     "refreshSetCookieChunks": 3,
     "markerFound": true
   }
