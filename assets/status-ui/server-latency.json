@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-10-01T05:55:33Z",
+  "generatedAt": "2026-10-01T13:16:47Z",
   "notes": "Server-side latency from prod telemetry (gateway_usage_events.routing_overhead_ms): the gateway's own added latency per request, excluding model generation time, which belongs to the provider. Refreshed by the server-latency workflow; rendered by the status-ui overlay in place of the checker-measured average.",
   "components": {
     "api": {
       "metric": "routing_overhead_ms_p50",
       "label": "Gateway overhead",
       "p50Ms": 8.0,
-      "sampleCount": 2263974,
+      "sampleCount": 2248190,
       "windowDays": 7
     }
   }
